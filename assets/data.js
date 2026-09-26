@@ -60,6 +60,7 @@ export const db = {
   newest: null,
   generated: '',
   abstracts: null,
+  notes: {}, // Crock’s notes, keyed by RFC number (data/notes.json)
 };
 
 export async function loadIndex() {
@@ -102,6 +103,16 @@ export async function loadAbstracts() {
   const json = await res.json();
   db.abstracts = json.abstracts;
   return db.abstracts;
+}
+
+// Crock’s notes: short, plain-language overviews of well-known RFCs, drafted
+// with AI help for the prototype (see the "about" line in data/notes.json).
+export async function loadNotes() {
+  const res = await fetch('data/notes.json');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  db.notes = json.notes || {};
+  return db.notes;
 }
 
 function bump(map, key) { map.set(key, (map.get(key) || 0) + 1); }
@@ -337,6 +348,39 @@ export function related(rec, limit = 5) {
 export function relatedQuestion(rec) {
   if (rec.obsolete) return `What replaced RFC ${rec.n}?`;
   return `Read next from RFC ${rec.n}`;
+}
+
+export const noteFor = (rec) => db.notes[String(rec.n)] || null;
+
+// For RFCs without a note: one friendly sentence or two, built only from the index.
+// “A Best Current Practice from July 2007, from the avt working group (BCP 131).
+//  Nothing has replaced or updated it — it still stands as written.”
+const KIND_PHRASE = {
+  I: 'An Internet Standard', D: 'A Draft Standard', P: 'A Proposed Standard', B: 'A Best Current Practice',
+  N: 'An Informational RFC', E: 'An Experimental RFC', H: 'A Historic RFC',
+};
+const SOURCE_PHRASE = {
+  IETF: ', from the IETF', IAB: ', from the Internet Architecture Board', IRTF: ', from the Internet Research Task Force',
+  Independent: ', published as an independent submission', Editorial: ', from the RFC Series’ editorial stream',
+};
+export function factsLine(rec) {
+  const when = monthYear(rec);
+  const source = rec.wg ? `, from the ${rec.wg} working group` : SOURCE_PHRASE[rec.stream] || '';
+  const series = rec.also.filter((id) => /^(STD|BCP|FYI)/.test(id)).map(prettyId);
+  const head = rec.status === 'U'
+    ? `One of the early RFCs, from ${when}, before statuses were recorded`
+    : `${KIND_PHRASE[rec.status]} from ${when}${source}`;
+  let s = `${head}${series.length ? ` (${series.join(', ')})` : ''}.`;
+  if (rec.obsoletes.length) s += ` It replaced ${plural(rec.obsoletes, 'RFC', 'RFCs')} ${numList(rec.obsoletes, 3)}.`;
+  if (rec.obsolete) {
+    const first = Math.min(...rec.obsoletedBy.map((n) => db.byN.get(n)?.year || 9999));
+    s += ` It was itself replaced in ${first}.`;
+  } else if (rec.updatedBy.length) {
+    s += rec.updatedBy.length === 1 ? ' One later RFC updates it, so read the two together.' : ` ${rec.updatedBy.length} later RFCs update it, so read them together.`;
+  } else {
+    s += ' Nothing has replaced or updated it — it still stands as written.';
+  }
+  return s;
 }
 
 // RFC Editor citation format, e.g.

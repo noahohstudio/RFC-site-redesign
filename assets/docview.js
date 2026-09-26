@@ -3,7 +3,7 @@
 import {
   db, ERA_BY_KEY, STATUS, esc, fmtInt, monthYear, authorsFull, statusLabel, glyphClass, prettyId, doi,
   rfcUrl, formats, hasTxt, lineage, currentVersions, primaryCurrent, replacementStory, related, relatedQuestion,
-  citation, numList, plural,
+  citation, numList, plural, noteFor, factsLine,
 } from './data.js';
 import { $, $$, icon, mqPhone, navHeight, store, toast } from './ui.js';
 
@@ -114,6 +114,7 @@ function pageHTML(r) {
         <p class="byline">RFC ${r.n} · ${monthYear(r)}${r.authors.length ? ` · ${esc(authorsFull(r))}` : ''}</p>
       </header>
       ${noticesHTML(r)}
+      ${noteHTML(r)}
       <section class="sheet" id="sheet" aria-label="RFC ${r.n}, exactly as published">
         <div class="sheet-bar">
           <div class="sheet-prov">${icon('lock')}<span class="sheet-file">rfc${r.n}.txt</span><span class="t-overline">Canonical · unmodified</span></div>
@@ -150,6 +151,21 @@ function noticesHTML(r) {
     out.push(`<div class="callout callout-info">${icon('info')}<div class="callout-text"><p class="callout-title">This RFC has been updated</p><p class="callout-body">Read it together with ${links}${ups.length > 6 ? ` and ${ups.length - 6} more` : ''}. The text below is unchanged.</p></div></div>`);
   }
   return out.length ? `<div class="doc-notices">${out.join('')}</div>` : '';
+}
+
+// Crock’s note: why the RFC was written and where it made a difference, in plain words.
+// Only well-known RFCs have one; the rest get a line built from the index in the Crock panel.
+function noteHTML(r) {
+  const n = noteFor(r);
+  if (!n) return '';
+  return `
+      <section class="note" aria-labelledby="note-h">
+        <div class="note-label">${icon('compass')}<span class="t-overline">Crock’s note</span><span class="note-tag">Draft</span></div>
+        <h2 class="note-q" id="note-h">Why RFC ${r.n} matters</h2>
+        <p class="note-p">${esc(n.why)}</p>
+        <p class="note-p">${esc(n.where)}</p>
+        <p class="note-foot">A short draft written with AI help for this prototype. An editor still needs to review it.</p>
+      </section>`;
 }
 
 function relLinks(nums) {
@@ -189,18 +205,20 @@ function aboutHTML(r) {
     </section>`;
 
   const rel = related(r);
+  const count = rel.length ? `<span class="t-mono-s muted">· ${rel.length} ${rel.length === 1 ? 'pointer' : 'pointers'}</span>` : '';
   const relatedHTML = `
     <section class="related" aria-labelledby="rel-q">
       <div class="related-head">
-        <div class="related-label">${icon('compass')}<span class="t-overline">Ask Crock</span><span class="t-mono-s muted">· ${rel.length} ${rel.length === 1 ? 'pointer' : 'pointers'}</span></div>
+        <div class="related-label">${icon('compass')}<span class="t-overline">Ask Crock</span>${count}</div>
+        ${noteFor(r) ? '' : `<p class="related-lede">${esc(factsLine(r))}</p>`}
         <p class="related-q" id="rel-q">${relatedQuestion(r)}</p>
       </div>
       ${rel.length ? rel.map((p) => `
         <a class="pointer" href="#/rfc/${p.rec.n}" data-era="${p.rec.era}">
           <span class="pointer-body"><span class="pointer-id"><span class="n">${p.rec.n}</span><span class="t">${esc(p.rec.title)}</span></span><span class="pointer-why">${esc(p.why)}</span></span>
           <span class="pointer-trail ${glyphClass(p.rec)}"><i class="glyph" role="img" aria-label="${statusLabel(p.rec)}"></i>${icon('arrow-right')}</span>
-        </a>`).join('') : '<p class="related-foot" style="background:none">Crock found nothing else in the index that points to or from this RFC.</p>'}
-      <p class="related-foot">Crock points only to what the index records — what replaced, updates or sits alongside this RFC. Nothing here is generated. Named for Steve Crocker, who wrote <a href="#/rfc/1">RFC 1</a> in 1969.</p>
+        </a>`).join('') : '<p class="related-empty">Nothing in the index points to or from this RFC — it stands on its own.</p>'}
+      <p class="related-foot">Pointers come only from what the index records — what replaced, updates or sits alongside this RFC. Named for Steve Crocker, who wrote <a href="#/rfc/1">RFC 1</a> in 1969.</p>
     </section>`;
 
   return `<div class="about">

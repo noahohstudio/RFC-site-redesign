@@ -58,6 +58,7 @@ export function init() {
   io = new IntersectionObserver(onIntersect, { rootMargin: '1600px 0px 1600px 0px' });
 
   renderRailAndFilters();
+  wireRailFade();
   renderChips();
   renderTimeline();
   renderScrubber();
@@ -268,8 +269,14 @@ function rebuild({ keep }) {
     listEl.innerHTML = `<div class="list-empty"><p>${state.view.type === 'search' ? `No RFCs match “${esc(state.view.q)}” with these filters.` : 'Nothing here with these filters — tick a few more kinds.'}</p><a class="btn btn-outline btn-sm" href="#/">Show everything</a></div>`;
   }
   for (const s of state.sections) io.observe(s.el);
-  // render the first screenful straight away so the page never starts blank
+  // render the first screenful straight away so the page never starts blank…
   for (const s of state.sections.slice(0, 2)) renderSection(s, false);
+  // …and the oldest years too, so arriving at the end never resizes the page under the reader
+  let tail = 0;
+  for (let i = state.sections.length - 1; i >= 2 && tail < 3 * window.innerHeight; i--) {
+    renderSection(state.sections[i], false);
+    tail += state.sections[i].rowsEl.offsetHeight;
+  }
   renderBanner();
   renderEnd();
   updateTimelineCounts();
@@ -440,11 +447,26 @@ function renderRailAndFilters() {
   railEl.innerHTML = railHTML();
 }
 
+// The rail scrolls on its own when it's taller than the screen. Fade whichever edge
+// has more behind it, so it's clear the list goes on.
+let fadeRail = () => {};
+function wireRailFade() {
+  const box = railEl.parentElement;
+  fadeRail = () => {
+    box.classList.toggle('fade-top', railEl.scrollTop > 4);
+    box.classList.toggle('fade-bottom', railEl.scrollHeight - railEl.clientHeight - railEl.scrollTop > 4);
+  };
+  railEl.addEventListener('scroll', fadeRail, { passive: true });
+  new ResizeObserver(fadeRail).observe(railEl);
+  fadeRail();
+}
+
 // Update the checkboxes in place (rail + filters sheet) so keyboard focus survives.
 function syncFilterInputs() {
   $$('input[data-kind]').forEach((i) => { i.checked = state.kinds.has(i.dataset.kind); });
   $$('input[data-replaced]').forEach((i) => { i.checked = state.replaced; });
   $$('[data-reset]').forEach((b) => { b.hidden = !filtersActive(); });
+  fadeRail();
 }
 
 function onFilterChange(e) {

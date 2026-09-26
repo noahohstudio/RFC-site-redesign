@@ -35,7 +35,7 @@ python3 tools/build-assets.py              # only if icons or status glyphs chan
 ```
 
 `build-data.py` writes `data/rfc-index.json` (every RFC, compact, ~570 KB gzipped) and `data/abstracts.json`
-(abstracts, loaded lazily for deeper search).
+(abstracts, loaded lazily for deeper search). `data/notes.json` (Crock’s notes) is edited directly; the build script leaves it alone.
 
 ## What’s real
 
@@ -44,7 +44,8 @@ python3 tools/build-assets.py              # only if icons or status glyphs chan
 | Index | All 9,842 RFCs from the official `rfc-index.xml`: titles, authors, dates, status, stream, working group, obsoletes / updates, STD / BCP / FYI, errata, formats |
 | Documents | The canonical `.txt` is fetched from `rfc-editor.org/rfc/rfcNNNN.txt` and shown byte for byte. The SHA-256 in the sheet footer is computed from the fetched file |
 | Search | Number jump (`9110`, `rfc 2616`), sub-series (`STD 97`, `BCP 14`), years (`1999`), and ranked text search over titles, keywords, authors, working groups and abstracts. It’s deterministic, with no model |
-| Ask Crock | The archivist, named for Steve Crocker, who wrote RFC 1. Built only from relations recorded in the index: what replaced an RFC, what updates it, what was published alongside it (same working group and month), and its STD/BCP siblings. It shows up on RFC pages, and in search as questions the index can answer (“What replaced RFC 2616?”) |
+| Ask Crock | The archivist, named for Steve Crocker, who wrote RFC 1. Its pointers are built only from relations recorded in the index: what replaced an RFC, what updates it, what was published alongside it (same working group and month), and its STD/BCP siblings. It shows up on RFC pages, and in search as questions the index can answer (“What replaced RFC 2616?”) |
+| Crock’s notes | For 62 well-known RFCs, a short plain-language note above the sheet: why it was written and where it made a difference (`data/notes.json`). The notes are drafts written with AI assistance for this prototype, labelled as such, and need an editor’s review. Every other RFC gets a friendly line built from the index in the Crock panel |
 | Lineage | Obsoletes / obsoleted-by chains (e.g. 2068 → 2616 → 7231 → 9110) |
 | Timeline | Real per-year counts (1968–2026, peak 459 in 2006); under filters it shows matching vs. total |
 

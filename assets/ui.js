@@ -25,10 +25,27 @@ export function initTheme() {
   });
 }
 export function toggleTheme() { setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true); }
+// A theme swap changes every colour at once. Rather than letting hundreds of hover
+// fades run together, transitions pause for the swap and — where the browser can —
+// the old and new pages crossfade as one image.
 function setTheme(t, persist) {
-  root.dataset.theme = t;
-  if (persist) store.set('rfc-theme', t);
-  syncThemeUI();
+  const swap = () => {
+    root.dataset.theme = t;
+    if (persist) store.set('rfc-theme', t);
+    syncThemeUI();
+  };
+  root.classList.add('is-theming');
+  // the new colours are already applied by now, so re-enabling transitions starts none
+  const settle = () => root.classList.remove('is-theming');
+  if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const vt = document.startViewTransition(swap);
+    vt.ready.catch(() => {}); // skipped (e.g. in a background tab): the swap still happens, just without the fade
+    vt.finished.then(settle, settle);
+  } else {
+    swap();
+    getComputedStyle(root).color; // apply the new colours now, while transitions are paused
+    settle();
+  }
 }
 function syncThemeUI() {
   const dark = root.dataset.theme === 'dark';

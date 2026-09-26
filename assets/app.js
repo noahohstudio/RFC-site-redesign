@@ -4,7 +4,7 @@
 //   #/search/email     index filtered to matches  #/kind/B       one kind (e.g. BCP)
 //   #/stream/IRTF      one stream                 #/errata       RFCs with errata
 //   #/rfc/9110         a document                 #/rfc/9110/s/3 a section of it
-import { db, loadIndex, loadAbstracts, fmtInt, MONTHS } from './data.js';
+import { db, loadIndex, loadAbstracts, loadNotes, fmtInt, MONTHS } from './data.js';
 import { attachAbstracts } from './search.js';
 import * as ui from './ui.js';
 import * as index from './indexview.js';
@@ -25,7 +25,8 @@ async function boot() {
   ui.initDialogs();
   index.renderSkeleton();
   try {
-    await loadIndex();
+    // Crock’s notes are small and optional: pages simply go without them if they fail to load.
+    await Promise.all([loadIndex(), loadNotes().catch(() => null)]);
   } catch (err) {
     index.renderLoadError(err);
     return;

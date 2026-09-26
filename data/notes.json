@@ -1,0 +1,253 @@
+{
+  "about": "Crock’s notes: short, plain-language overviews of well-known RFCs — why each was written, and where it made a difference. Drafted with AI assistance for this prototype; an editor should review each one before it is used anywhere real.",
+  "notes": {
+    "1": {
+      "why": "In 1969 a handful of graduate students were working out how the first ARPANET computers should talk to each other. Steve Crocker wrote their ideas up as a modest “request for comments” — and the name stuck.",
+      "where": "Every RFC since, including the ones that run today’s internet, carries on the open, anyone-can-comment habit this memo started."
+    },
+    "768": {
+      "why": "Not everything needs TCP’s careful, guaranteed delivery. UDP is the lightweight option: send a packet and move on, with almost no overhead.",
+      "where": "DNS lookups, video calls, online games and QUIC all ride on UDP, because speed matters more to them than perfection."
+    },
+    "791": {
+      "why": "Networks built by different people needed one shared way to address and forward packets. IP is that common language: every packet gets a from and a to, and routers pass it along.",
+      "where": "This is IPv4 — the 192.168.1.1-style addresses that still carry much of the internet’s traffic more than forty years on."
+    },
+    "792": {
+      "why": "When something goes wrong in the network — a host can’t be reached, a packet wanders too long — routers need a way to say so. ICMP is IP’s little messaging system for errors and checks.",
+      "where": "Every time someone runs ping or traceroute, they’re sending ICMP messages."
+    },
+    "793": {
+      "why": "IP delivers packets but promises nothing. TCP adds the promises: data arrives complete, in order, and at a pace the network can handle.",
+      "where": "For four decades it carried the web, email and file transfers. In 2022 it was brought together with its many updates in RFC 9293."
+    },
+    "826": {
+      "why": "On a local network, knowing a machine’s IP address isn’t enough — you need its hardware address to deliver anything. ARP asks the network “who has this address?” and remembers the answer.",
+      "where": "Every device on a home or office network uses it, quietly, all the time."
+    },
+    "1034": {
+      "why": "Early on, every computer’s name lived in one shared file that had to be copied around by hand. DNS replaced it with a directory spread across many servers, which anyone can look names up in.",
+      "where": "Every time you type a web address, DNS turns the name into an IP address — usually in a few milliseconds."
+    },
+    "1035": {
+      "why": "The companion to RFC 1034: where that one explains the ideas, this one pins down the actual messages and record formats that DNS servers exchange.",
+      "where": "Record types you still see today — A, MX, TXT — and the way DNS messages are packed, come from here."
+    },
+    "1122": {
+      "why": "By the late 1980s, different systems disagreed on the fine print. This RFC set out what every internet-connected computer must, should and may do.",
+      "where": "It’s still the reference behind how operating systems handle IP, TCP and UDP."
+    },
+    "1149": {
+      "why": "An April Fools’ joke: a perfectly deadpan specification for sending internet packets by carrier pigeon.",
+      "where": "A reminder that the RFC series has a sense of humour — and in 2001 a group in Bergen, Norway actually tried it, pigeons and all."
+    },
+    "1321": {
+      "why": "MD5 turns any data into a short fingerprint, so you can check that a file hasn’t changed.",
+      "where": "It became hugely popular, then researchers broke it. Today it’s fine for spotting accidental damage, but it must not be trusted for security."
+    },
+    "1918": {
+      "why": "IPv4 addresses were running short, and most computers inside companies didn’t need to be reachable from outside. This RFC set aside ranges that anyone can use privately.",
+      "where": "It’s why your home network uses 192.168.x.x or 10.x.x.x addresses behind your router."
+    },
+    "1945": {
+      "why": "The web was already booming when this was written. It recorded how browsers and servers were actually talking, so everyone could agree on the basics.",
+      "where": "Requests, headers and status codes like 404 were written down here, and HTTP still uses them."
+    },
+    "1958": {
+      "why": "Written to capture what had made the internet work so far: keep the network simple and put the cleverness at the edges — the “end-to-end” idea.",
+      "where": "Those principles still come up whenever people argue about how a new protocol should be designed."
+    },
+    "2026": {
+      "why": "Someone had to write down how an idea becomes an internet standard. This RFC describes the path: drafts, review, then the standards track.",
+      "where": "It’s the rulebook behind the statuses you see on every RFC here — Proposed Standard, Internet Standard, Best Current Practice."
+    },
+    "2045": {
+      "why": "Early email could only carry plain English text. MIME added a way to label and package everything else: other languages, pictures, attachments.",
+      "where": "Every email attachment uses it, and its content types — text/html, image/png — became the web’s way of labelling files too."
+    },
+    "2119": {
+      "why": "Specifications used “must” and “should” loosely, which led to arguments about what was really required. This one-page RFC pinned down exactly what they mean.",
+      "where": "Nearly every RFC written since cites it — it’s where the capital-letter MUST and SHOULD across the series come from."
+    },
+    "2131": {
+      "why": "Setting an IP address by hand on every computer doesn’t scale. DHCP lets a device join a network and be handed an address and settings automatically.",
+      "where": "It’s what happens every time your phone or laptop connects to Wi-Fi."
+    },
+    "2324": {
+      "why": "Another April Fools’ RFC: a protocol for controlling, monitoring and diagnosing coffee pots over the internet.",
+      "where": "It gave the web the famous “418 I’m a teapot” error, which still turns up — affectionately — in real software."
+    },
+    "2616": {
+      "why": "The web quickly outgrew HTTP/1.0. HTTP/1.1 added reusing connections, hosting many sites on one server, and much better caching.",
+      "where": "For fifteen years it was the web’s rulebook. It has since been split up and rewritten; today’s version lives in RFCs 9110–9112."
+    },
+    "2818": {
+      "why": "Secure websites were already common, but how HTTP should run inside an encrypted connection had never been written down. This short RFC did — it’s the “https” in web addresses.",
+      "where": "Its rules, like checking that a certificate matches the site’s name, were folded into HTTP Semantics (RFC 9110) in 2022."
+    },
+    "3261": {
+      "why": "Calls over the internet need a way to find someone, ring them and agree on how to talk. SIP handles that calling part — a bit like HTTP, but for phone calls.",
+      "where": "It sits behind most internet phone systems: office desk phones, many calling apps and phone carriers’ own networks."
+    },
+    "3339": {
+      "why": "Dates were written a dozen different ways, which caused endless mix-ups. This RFC picked one clear format: 2002-07-15T12:00:00Z.",
+      "where": "You’ll find it in logs, APIs and JSON data all over the web."
+    },
+    "3550": {
+      "why": "Live audio and video need to arrive in order and on time, not just eventually. RTP adds timestamps and sequence numbers so the other end can play media smoothly.",
+      "where": "Nearly every voice and video call — from desk phones to browser video chats — carries its sound and pictures over RTP."
+    },
+    "3629": {
+      "why": "Computers had hundreds of incompatible ways to store text in different languages. UTF-8 can encode every character in Unicode while staying compatible with plain ASCII.",
+      "where": "It’s now the encoding of almost every web page, email and piece of source code."
+    },
+    "3986": {
+      "why": "Web addresses had grown plenty of edge cases. This RFC defines exactly how an address is built — scheme, host, path, query, fragment — and how to read one.",
+      "where": "Every link you click, and every browser and server that makes sense of it, follows these rules."
+    },
+    "4122": {
+      "why": "Programs often need an ID that’s unique without asking any central authority. UUIDs are 128-bit IDs that anyone can generate, with practically no chance of a clash.",
+      "where": "They’re everywhere in software — database keys, file formats, device IDs. In 2024 RFC 9562 replaced this spec and added time-ordered versions."
+    },
+    "4253": {
+      "why": "Remote logins used to send passwords across the network in the clear. SSH wraps the whole session in encryption and checks that you’re talking to the right server.",
+      "where": "It’s how developers and administrators log into servers — and how many of them push code with git."
+    },
+    "4271": {
+      "why": "The internet is tens of thousands of separately run networks. BGP is how they tell each other which addresses they can reach, so traffic can find its way across.",
+      "where": "It’s the glue between internet providers — and when a BGP announcement goes wrong, large parts of the internet can briefly vanish."
+    },
+    "4648": {
+      "why": "Plenty of systems can only carry plain text safely. Base64 turns any data into letters and digits, and this RFC pins down exactly how.",
+      "where": "It shows up in email attachments, data: URLs, web tokens and countless APIs."
+    },
+    "4961": {
+      "why": "Voice and video calls often failed to cross home routers and firewalls, because devices sent media from one port and listened on another. This RFC named the simple fix: send and receive on the same port.",
+      "where": "Most internet phones and calling apps now work this way, which makes calls far more likely to get through NATs and firewalls."
+    },
+    "5246": {
+      "why": "TLS is the lock on secure connections. Version 1.2 modernised its cryptography and became the long-running workhorse of HTTPS.",
+      "where": "For about a decade it secured most of the web. TLS 1.3 (RFC 8446) replaced it in 2018, but 1.2 is still widely supported."
+    },
+    "5280": {
+      "why": "Certificates prove a website is who it says it is, but the underlying X.509 standard left too many options open. This RFC narrowed it down to what the internet actually uses.",
+      "where": "Every padlock in your browser rests on certificates checked by these rules."
+    },
+    "5321": {
+      "why": "Email needs a way to hand messages from server to server until they reach the right inbox. SMTP is that relay; this is its current version, going back to RFC 821 in 1982.",
+      "where": "Almost every email sent today travels between servers over SMTP."
+    },
+    "5322": {
+      "why": "An email isn’t just text: it has a From, a To, a Subject and a Date. This RFC defines how those headers and the message body are laid out, going back to RFC 822 in 1982.",
+      "where": "Every email in every inbox follows this format, whichever app you use."
+    },
+    "5646": {
+      "why": "Software needs a way to say which language — and which variety of it — some text is in. This RFC defines short tags like en-GB, pt-BR and zh-Hant.",
+      "where": "Your browser sends them to websites so pages come back in your language, and apps use them for spelling and translations."
+    },
+    "5905": {
+      "why": "Computer clocks drift, and a network whose clocks disagree breaks in subtle ways. NTP lets machines ask trusted time servers and set themselves accurately.",
+      "where": "Your phone and laptop keep the right time thanks to it — and so do the servers checking your logins and certificates."
+    },
+    "6265": {
+      "why": "HTTP forgets you between page loads. Cookies let a site remember small things — that you’re signed in, what’s in your basket — and this RFC finally described how they really work.",
+      "where": "Every login and shopping basket on the web relies on cookies — and so, less happily, does a lot of tracking."
+    },
+    "6376": {
+      "why": "Anyone can type any address into an email’s From line. DKIM lets the sending domain sign its messages, so receivers can check they really came from there and weren’t changed.",
+      "where": "Big mail providers check it on almost every message; it’s one of the main defences against spoofed email and phishing."
+    },
+    "6455": {
+      "why": "Web pages could only get fresh data by asking the server again and again. WebSocket opens a lasting two-way channel, so the server can send updates the moment they happen.",
+      "where": "Live chat, collaborative editors, trading screens and multiplayer browser games all use it."
+    },
+    "6749": {
+      "why": "Apps used to ask for your actual password to reach your data elsewhere. OAuth lets you grant limited access with a token instead, without ever handing over the password.",
+      "where": "“Sign in with…” buttons and most app-to-app connections are built on it."
+    },
+    "7208": {
+      "why": "Spammers can send mail pretending to be from any domain. SPF lets a domain publish a list of the servers allowed to send its email.",
+      "where": "Mail providers check it on incoming messages — together with DKIM and DMARC — to catch forgeries."
+    },
+    "7231": {
+      "why": "RFC 2616 had grown sprawling and sometimes contradictory, so the HTTP working group split it into six clearer documents. This one covers what requests and responses mean.",
+      "where": "It guided HTTP for eight years before being folded into RFC 9110 in 2022."
+    },
+    "7234": {
+      "why": "Part of the 2014 rewrite of HTTP/1.1, this RFC explains when a stored copy of a response can be reused, and when it has to be checked again.",
+      "where": "Its rules shaped browser and CDN caching until RFC 9111 replaced it in 2022."
+    },
+    "7282": {
+      "why": "The IETF decides by “rough consensus” — sometimes by humming rather than voting. This RFC explains what that really means, and why a simple majority isn’t enough.",
+      "where": "It’s one of the clearest windows into how the people behind these documents actually make decisions."
+    },
+    "7489": {
+      "why": "SPF and DKIM can check an email, but a domain had no way to say what should happen when those checks fail. DMARC lets it publish a policy — such as “reject fakes” — and get reports back.",
+      "where": "Large mail providers now expect it from anyone sending email in bulk; it’s a big reason spoofed bank emails get caught."
+    },
+    "7519": {
+      "why": "Web services needed a compact, signed way to pass claims like “this user is Alice” between systems. A JWT is a small JSON token that can be checked without calling home.",
+      "where": "They carry sign-ins and permissions in a huge number of web and mobile apps, often alongside OAuth."
+    },
+    "7540": {
+      "why": "Pages had grown to hundreds of files, and HTTP/1.1 fetched them clumsily. HTTP/2 sends many requests at once over a single connection, in a compact binary form.",
+      "where": "It made the web noticeably faster and quickly became the default in browsers. Its updated version is RFC 9113."
+    },
+    "8174": {
+      "why": "People weren’t sure whether a lowercase “must” carried the same force as MUST. This short update settles it: only the capitalised words are the special ones.",
+      "where": "Most RFCs now cite it right next to RFC 2119; together they make up BCP 14."
+    },
+    "8200": {
+      "why": "IPv4’s roughly four billion addresses were never going to be enough. IPv6 has so many that every device can have its own, with room to spare.",
+      "where": "A large and growing share of traffic — especially on mobile networks — now travels over IPv6."
+    },
+    "8259": {
+      "why": "JSON grew out of JavaScript as a simple way to write data as text. This RFC nails down the exact rules, so every system reads it the same way.",
+      "where": "It’s the everyday format of web APIs — when an app talks to a server, it’s usually swapping JSON."
+    },
+    "8446": {
+      "why": "TLS 1.2 had collected weak options and took extra round trips to connect. Version 1.3 removed the risky parts and made secure connections faster to set up.",
+      "where": "Most HTTPS connections from modern browsers now use it — it’s the padlock, updated."
+    },
+    "8555": {
+      "why": "Getting a certificate for HTTPS used to be slow, manual and often paid for. ACME lets a server prove it controls a domain and get a certificate automatically.",
+      "where": "It’s the protocol behind Let’s Encrypt, which helped make HTTPS the normal way to browse."
+    },
+    "8890": {
+      "why": "When the interests of companies, governments and people clash, whose side should internet standards take? This RFC answers plainly: the people using the internet.",
+      "where": "It’s become a touchstone in IETF debates about privacy, and about who a protocol really serves."
+    },
+    "9000": {
+      "why": "TCP is hard to change and slow to start, especially on mobile. QUIC rebuilds reliable, encrypted transport on top of UDP, with quicker connections that survive switching networks.",
+      "where": "It carries HTTP/3, so a large share of traffic from big websites and apps now runs over it."
+    },
+    "9110": {
+      "why": "HTTP now comes in three versions — 1.1, 2 and 3 — that all mean the same things: methods, status codes, headers. This RFC gathers that shared meaning in one place.",
+      "where": "It’s the core definition of how the web talks today; every browser, server and web API builds on it."
+    },
+    "9111": {
+      "why": "Reusing a saved copy of a response saves time and data — as long as you know it’s still good. This RFC sets out those rules for every version of HTTP.",
+      "where": "Browsers, CDNs and proxies use it to decide what they can serve without asking the original site again."
+    },
+    "9112": {
+      "why": "With HTTP’s meaning moved into RFC 9110, this document covers only how HTTP/1.1 messages are written out on the wire.",
+      "where": "HTTP/1.1 is still everywhere — in APIs, in small devices, and as the fallback when newer versions aren’t available."
+    },
+    "9113": {
+      "why": "An update of HTTP/2 (RFC 7540) that lines it up with the new HTTP Semantics and drops a prioritisation scheme that never worked well in practice.",
+      "where": "Browsers and servers use it across a huge share of the web, alongside HTTP/3."
+    },
+    "9114": {
+      "why": "HTTP/3 carries the same HTTP over QUIC instead of TCP, so one lost packet no longer holds up everything else, and connections start faster.",
+      "where": "Big websites and browsers already use it widely — it helps most on phones and patchy connections."
+    },
+    "9293": {
+      "why": "RFC 793 had gathered forty years of fixes, scattered across many documents. This RFC brings them together into one up-to-date description of TCP.",
+      "where": "It’s the version anyone building TCP should read today: the same protocol, finally all in one place."
+    },
+    "9562": {
+      "why": "An update to the classic UUID specification (RFC 4122) that adds new versions — including ones ordered by time, which work much better as database keys.",
+      "where": "Libraries and databases are adopting its time-ordered UUIDv7."
+    }
+  }
+}
