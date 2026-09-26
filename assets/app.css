@@ -11,11 +11,13 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   overflow-anchor: none;
+  overscroll-behavior-y: none; /* no rubber-band bounce past the top or bottom; sideways swipe-back still works */
   scroll-padding-top: 136px;
 }
 body {
   margin: 0;
   min-height: 100vh;
+  overscroll-behavior-y: none;
   background: var(--color-bg-canvas);
   color: var(--color-text-primary);
   font: 400 16px/24px var(--font-sans);
@@ -318,7 +320,7 @@ body.legend-hidden .legend-link { display: flex; }
 
 /* chips row (<1200) */
 .chips-row { display: none; }
-.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; padding: 4px 0; }
+.chips { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; scroll-snap-type: x proximity; padding: 4px 0; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   position: relative; flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px;
