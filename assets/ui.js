@@ -5,7 +5,7 @@ import { db, ERAS, KINDS, STATUS, fmtInt, esc } from './data.js';
 
 export const $ = (sel, el = document) => el.querySelector(sel);
 export const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
-export const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+export const icon = (name, cls = '') => `<svg class="icon ${cls}" data-i="${name}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 export const mqPhone = matchMedia('(max-width: 767px)');
 export const mqTablet = matchMedia('(max-width: 1023px)');
 export const navHeight = () => (mqPhone.matches ? 56 : 64);

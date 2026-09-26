@@ -2,7 +2,7 @@
  * RFC Editor redesign — design tokens (v0.3)
  * Exported from the Figma variables in file d4ODFIKoRq0pxCiRKuAPNm.
  * Names follow each variable's WEB code syntax, e.g. bg/canvas → --color-bg-canvas.
- * Collections: Primitives · Color (Light / Dark) · Dimension · Typography · Effects
+ * Collections: Primitives · Color (Light / Dark) · Dimension · Typography · Effects · Motion
  */
 
 :root {
@@ -58,6 +58,13 @@
   --effect-overlay: 0 1px 2px rgb(19 21 20 / 0.06), 0 12px 32px -4px rgb(19 21 20 / 0.10);
   --effect-sheet: 0 1px 2px rgb(26 25 21 / 0.05), 0 10px 28px -6px rgb(26 25 21 / 0.07);
   --scrim: rgb(26 25 21 / 0.22);
+
+  /* ── Motion ────────────────────────────────────────────────────── */
+  --motion-duration-fast: 120ms;  /* answering a hover or press */
+  --motion-duration-base: 200ms;  /* letting go of a hover; menus and dropdowns opening */
+  --motion-duration-slow: 320ms;  /* sheets and dialogs opening */
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);  /* state changes */
+  --motion-ease-enter: cubic-bezier(0, 0, 0.2, 1);     /* things arriving on screen */
 }
 
 /* ── Color · Light (default) ─────────────────────────────────────── */
