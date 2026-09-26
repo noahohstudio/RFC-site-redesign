@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>RFC Editor — redesign concept</title>
+  <meta name="description" content="An unofficial redesign concept for the RFC Editor: all 9,842 RFCs, newest first, searchable from the official RFC index. Each RFC is shown exactly as published.">
+  <meta name="theme-color" content="#fbf7f0">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <link rel="preload" href="data/rfc-index.json" as="fetch" type="application/json" crossorigin>
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/glyphs.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('rfc-theme');
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    })();
+  </script>
+  <script type="module" src="assets/app.js"></script>
+</head>
+<body>
+<!-- sprite:start -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 4V19M18 13L12 19L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 20V5M18 11L12 5L6 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M4 12H19M13 18L19 12L13 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M20 12H5M11 18L5 12L11 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 17L17 7M17 16V7H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="M6 15L12 9L18 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5L10 17.5L19 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 15.5L20 20M17 11C17 14.3137 14.3137 17 11 17C7.68629 17 5 14.3137 5 11C5 7.68629 7.68629 5 11 5C14.3137 5 17 7.68629 17 11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-enter" viewBox="0 0 24 24"><path d="M19 5V12C19 13.66 17.66 15 16 15H6M10 19L6 15L10 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><path d="M5 16V5H16M8 8H19V19H8V8Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-hash" viewBox="0 0 24 24"><path d="M10 4L8 20M16 4L14 20M5 9H20M4 15H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-document" viewBox="0 0 24 24"><path d="M18 7L14 3H6V21H18V7ZM14 3V7H18M9 12H15M9 16H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 7H20M9 12H20M9 17H20M4 7H5M4 12H5M4 17H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7H13.75M13.75 7C13.75 8.24264 14.7574 9.25 16 9.25C17.2426 9.25 18.25 8.24264 18.25 7M13.75 7C13.75 5.75736 14.7574 4.75 16 4.75C17.2426 4.75 18.25 5.75736 18.25 7M18.25 7H20M4 17H5.75M5.75 17C5.75 18.2426 6.75736 19.25 8 19.25C9.24264 19.25 10.25 18.2426 10.25 17M5.75 17C5.75 15.7574 6.75736 14.75 8 14.75C9.24264 14.75 10.25 15.7574 10.25 17M10.25 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M7 4H17V20L12 16L7 20V4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4V15M17 10L12 15L7 10M5 20H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12C4.00146 13.8507 4.64457 15.6438 5.81976 17.0735C6.99496 18.5033 8.62953 19.4814 10.445 19.8411C12.2605 20.2009 14.1445 19.92 15.7761 19.0464C17.4077 18.1728 18.686 16.7606 19.3931 15.0502C20.1002 13.3398 20.1924 11.4372 19.654 9.6665C19.1156 7.89578 17.98 6.3665 16.4405 5.33921C14.901 4.31193 13.053 3.85019 11.2112 4.03268C9.36946 4.21516 7.64796 5.03057 6.34 6.33999L4 8.49999M8.5 8.49999L4 8.49999V3.99999M12 7.99999V12L15 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><path d="M12 11V16M12 7.75V8.25M20 12C20 16.4183 16.4183 20 12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-contrast" viewBox="0 0 24 24"><path d="M12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/><path d="M12 4C14.1217 4 16.1566 4.84285 17.6569 6.34315C19.1571 7.84344 20 9.87827 20 12C20 14.1217 19.1571 16.1566 17.6569 17.6569C16.1566 19.1571 14.1217 20 12 20V4Z" fill="currentColor"/></symbol>
+<symbol id="i-compass" viewBox="0 0 24 24"><path d="M12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/><path d="M14.8 9.2L13.2 13.2L9.2 14.8L10.8 10.8L14.8 9.2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="M4 12.25L12 16.75L20 12.25M4 16L12 20.5L20 16M12 4L20 8.5L12 13L4 8.5L12 4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M12 20C14 18.5 17 18 20 18.5V5C17 4.5 14 5 12 6.5C10 5 7 4.5 4 5V18.5C7 18 10 18.5 12 20ZM12 6.5V20" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-lineage" viewBox="0 0 24 24"><path d="M7.25 12C7.25 13.2426 6.24264 14.25 5 14.25C3.75736 14.25 2.75 13.2426 2.75 12C2.75 10.7574 3.75736 9.75 5 9.75C6.24264 9.75 7.25 10.7574 7.25 12ZM7.25 12H9.75M14.25 12C14.25 13.2426 13.2426 14.25 12 14.25C10.7574 14.25 9.75 13.2426 9.75 12M14.25 12C14.25 10.7574 13.2426 9.75 12 9.75C10.7574 9.75 9.75 10.7574 9.75 12M14.25 12H16.75M16.75 12C16.75 13.2426 17.7574 14.25 19 14.25C20.2426 14.25 21.25 13.2426 21.25 12C21.25 10.7574 20.2426 9.75 19 9.75C17.7574 9.75 16.75 10.7574 16.75 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24"><path d="M13.5 7L17 10.5M4.5 19.5L5.5 15L15.5 5L19 8.5L9 18.5L4.5 19.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-inbox" viewBox="0 0 24 24"><path d="M20 13V19H4V13L6.5 5.5H17.5L20 13ZM4 13H8.5L10 15.5H14L15.5 13H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><path d="M9.75 9.75C9.75 8.5 10.8 7.5 12 7.5C13.2 7.5 14.25 8.4 14.25 9.6C14.25 11.2 12 11.5 12 13.25M12 16V16.5M20 12C20 16.4183 16.4183 20 12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><path d="M3.5 6.5L12 13L20.5 6.5M3.5 6H20.5V18H3.5V6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M8 11V8C8 5.8 9.8 4 12 4C14.2 4 16 5.8 16 8V11M5 11H19V20H5V11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><path d="M4 10H20M8.5 3.5V7M15.5 3.5V7M4 5.5H20V20H4V5.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><path d="M5 20C5.8 16.5 8.6 14.5 12 14.5C15.4 14.5 18.2 16.5 19 20M15.5 8.5C15.5 10.433 13.933 12 12 12C10.067 12 8.5 10.433 8.5 8.5C8.5 6.567 10.067 5 12 5C13.933 5 15.5 6.567 15.5 8.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-rss" viewBox="0 0 24 24"><path d="M5 11C7.12173 11 9.15656 11.8429 10.6569 13.3431C12.1571 14.8434 13 16.8783 13 19M5 5C8.71303 5 12.274 6.475 14.8995 9.1005C17.525 11.726 19 15.287 19 19M7.25 18C7.25 18.6904 6.69036 19.25 6 19.25C5.30964 19.25 4.75 18.6904 4.75 18C4.75 17.3096 5.30964 16.75 6 16.75C6.69036 16.75 7.25 17.3096 7.25 18Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4H17L15 8L17 12H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-sort" viewBox="0 0 24 24"><path d="M8 5V19M11.5 15.5L8 19L4.5 15.5M16 19V5M19.5 8.5L16 5L12.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" fill="none"/></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 4C12.9 9 15 11.1 20 12C15 12.9 12.9 15 12 20C11.1 15 9 12.9 4 12C9 11.1 11.1 9 12 4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+<symbol id="g-I" viewBox="0 0 12 12" fill="none"><path d="M6 11C8.76142 11 11 8.76142 11 6C11 3.23858 8.76142 1 6 1C3.23858 1 1 3.23858 1 6C1 8.76142 3.23858 11 6 11Z" fill="currentColor"/></symbol>
+<symbol id="g-Io" viewBox="0 0 12 12" fill="none"><path d="M5.99998 10.4001C8.43003 10.4001 10.4 8.43015 10.4 6.0001C10.4 3.57004 8.43003 1.6001 5.99998 1.6001C3.56992 1.6001 1.59998 3.57004 1.59998 6.0001C1.59998 8.43015 3.56992 10.4001 5.99998 10.4001Z" stroke="currentColor" stroke-width="1.2"/></symbol>
+<symbol id="g-P" viewBox="0 0 12 12" fill="none"><path d="M5.99998 10.4001C8.43003 10.4001 10.4 8.43015 10.4 6.0001C10.4 3.57004 8.43003 1.6001 5.99998 1.6001C3.56992 1.6001 1.59998 3.57004 1.59998 6.0001C1.59998 8.43015 3.56992 10.4001 5.99998 10.4001Z" stroke="currentColor" stroke-width="1.2"/><path d="M5.99998 1.6001C4.83302 1.6001 3.71387 2.06367 2.88871 2.88883C2.06355 3.71399 1.59998 4.83315 1.59998 6.0001C1.59998 7.16705 2.06355 8.28621 2.88871 9.11137C3.71387 9.93653 4.83302 10.4001 5.99998 10.4001V1.6001Z" fill="currentColor"/></symbol>
+<symbol id="g-Po" viewBox="0 0 12 12" fill="none"><path d="M5.99998 10.4001C8.43003 10.4001 10.4 8.43015 10.4 6.0001C10.4 3.57004 8.43003 1.6001 5.99998 1.6001C3.56992 1.6001 1.59998 3.57004 1.59998 6.0001C1.59998 8.43015 3.56992 10.4001 5.99998 10.4001Z" stroke="currentColor" stroke-width="1.2"/></symbol>
+<symbol id="g-D" viewBox="0 0 12 12" fill="none"><path d="M5.99998 10.4001C8.43003 10.4001 10.4 8.43015 10.4 6.0001C10.4 3.57004 8.43003 1.6001 5.99998 1.6001C3.56992 1.6001 1.59998 3.57004 1.59998 6.0001C1.59998 8.43015 3.56992 10.4001 5.99998 10.4001Z" stroke="currentColor" stroke-width="1.2"/><path d="M5.99998 6.0001V1.6001C5.12974 1.6001 4.27904 1.85815 3.55547 2.34163C2.83189 2.82511 2.26793 3.5123 1.93491 4.31629C1.60188 5.12029 1.51475 6.00498 1.68452 6.8585C1.8543 7.71201 2.27336 8.49602 2.88871 9.11137C3.50406 9.72672 4.28806 10.1458 5.14158 10.3156C5.9951 10.4853 6.87979 10.3982 7.68378 10.0652C8.48778 9.73214 9.17497 9.16818 9.65844 8.44461C10.1419 7.72103 10.4 6.87034 10.4 6.0001H5.99998Z" fill="currentColor"/></symbol>
+<symbol id="g-Do" viewBox="0 0 12 12" fill="none"><path d="M5.99998 10.4001C8.43003 10.4001 10.4 8.43015 10.4 6.0001C10.4 3.57004 8.43003 1.6001 5.99998 1.6001C3.56992 1.6001 1.59998 3.57004 1.59998 6.0001C1.59998 8.43015 3.56992 10.4001 5.99998 10.4001Z" stroke="currentColor" stroke-width="1.2"/></symbol>
+<symbol id="g-B" viewBox="0 0 12 12" fill="none"><path d="M10.5 1.5H1.5V10.5H10.5V1.5Z" fill="currentColor"/></symbol>
+<symbol id="g-Bo" viewBox="0 0 12 12" fill="none"><path d="M10 2H2V10H10V2Z" stroke="currentColor" stroke-width="1.2"/></symbol>
+<symbol id="g-N" viewBox="0 0 12 12" fill="none"><path d="M5.99998 0.600098L11.4 6.0001L5.99998 11.4001L0.599976 6.0001L5.99998 0.600098Z" fill="currentColor"/></symbol>
+<symbol id="g-No" viewBox="0 0 12 12" fill="none"><path d="M5.99999 1.2998L10.7 5.9998L5.99999 10.6998L1.29999 5.9998L5.99999 1.2998Z" stroke="currentColor" stroke-width="1.2"/></symbol>
+<symbol id="g-E" viewBox="0 0 12 12" fill="none"><path d="M6 1L11.5 10.6H0.5L6 1Z" fill="currentColor"/></symbol>
+<symbol id="g-Eo" viewBox="0 0 12 12" fill="none"><path d="M6.00002 2L10.6 10H1.40002L6.00002 2Z" stroke="currentColor" stroke-width="1.2"/></symbol>
+<symbol id="g-H" viewBox="0 0 12 12" fill="none"><path d="M2.20001 2.2002L9.80001 9.8002M9.80001 2.2002L2.20001 9.8002" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="g-Ho" viewBox="0 0 12 12" fill="none"><path d="M2.20001 2.2002L9.80001 9.8002M9.80001 2.2002L2.20001 9.8002" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="g-U" viewBox="0 0 12 12" fill="none"><path d="M5.99998 10.4001C8.43003 10.4001 10.4 8.43015 10.4 6.0001C10.4 3.57004 8.43003 1.6001 5.99998 1.6001C3.56992 1.6001 1.59998 3.57004 1.59998 6.0001C1.59998 8.43015 3.56992 10.4001 5.99998 10.4001Z" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1.6 1.6"/></symbol>
+<symbol id="g-Uo" viewBox="0 0 12 12" fill="none"><path d="M5.99998 10.4001C8.43003 10.4001 10.4 8.43015 10.4 6.0001C10.4 3.57004 8.43003 1.6001 5.99998 1.6001C3.56992 1.6001 1.59998 3.57004 1.59998 6.0001C1.59998 8.43015 3.56992 10.4001 5.99998 10.4001Z" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1.6 1.6"/></symbol>
+</defs></svg>
+<!-- sprite:end -->
+
+<a class="skip" href="#main">Skip to the archive</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a class="brand" href="#/" aria-label="RFC Editor — all RFCs">
+        <span class="strata" aria-hidden="true"><i data-era="arpanet"></i><i data-era="internetworking"></i><i data-era="web"></i><i data-era="scale"></i><i data-era="encryption"></i><i data-era="present"></i></span>
+        <span class="brand-name">RFC Editor</span>
+      </a>
+      <nav class="nav-groups" aria-label="Main">
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-browse" data-menu="browse">Browse<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-learn" data-menu="learn">Learn<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      </nav>
+    </div>
+
+    <div class="search" id="search" role="search">
+      <div class="search-field">
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="search-input" id="search-input" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Search the archive — try “9110” or “email”"
+               role="combobox" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list"
+               aria-label="Search the archive">
+        <button class="search-clear" type="button" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+        <kbd class="kbd search-kbd" aria-hidden="true">⌘K</kbd>
+      </div>
+      <div class="search-pop" id="search-pop" hidden></div>
+    </div>
+
+    <div class="nav-right">
+      <nav class="nav-groups" aria-label="More">
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-contribute" data-menu="contribute">Contribute<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-about" data-menu="about">About<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      </nav>
+      <button class="icon-btn nav-search-btn" type="button" data-action="search" aria-label="Search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+      <button class="nav-menu-btn" type="button" data-action="menu" aria-label="Menu"><span class="nav-menu-label">Menu</span><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+      <button class="icon-btn nav-theme" type="button" data-action="theme" aria-label="Switch to dark mode"><svg class="icon" aria-hidden="true"><use href="#i-contrast"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<div class="megas" id="megas"></div>
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="scrub" id="scrub" aria-hidden="true">
+  <div class="scrub-now"><span class="era-dot"></span><span class="scrub-year">2026</span><span class="scrub-era">Present</span></div>
+  <div class="scrub-track" id="scrub-track" role="slider" tabindex="-1" aria-label="Walk through time"></div>
+</div>
+
+<div class="docbar" id="docbar" hidden></div>
+
+<main id="main">
+  <!-- ── The index (landing) ─────────────────────────────── -->
+  <div class="view" id="view-index">
+    <div class="m-search">
+      <button class="search-field m-search-field" type="button" data-action="search">
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+        <span>Search — try “9110” or “email”</span>
+      </button>
+    </div>
+
+    <div class="shell shell-index">
+      <aside class="rail rail-left" aria-label="Walk through time and filters">
+        <div class="rail-inner" id="rail-left"></div>
+      </aside>
+
+      <div class="center">
+        <section class="welcome" aria-labelledby="welcome-title">
+          <p class="t-overline">The RFC archive</p>
+          <h1 id="welcome-title">The internet, as it was written.</h1>
+          <p class="intro intro-long"><span data-bind="total">9,842</span> Requests for Comments, from 1969 to today — each kept exactly as it was published. Newest first; scroll to walk back through time.</p>
+          <p class="intro intro-short"><span data-bind="total">9,842</span> RFCs from 1969 to today, each kept exactly as it was published.</p>
+        </section>
+
+        <div class="chips-row" id="chips"></div>
+
+        <section class="legend" id="legend" aria-labelledby="legend-title">
+          <div class="legend-top">
+            <h2 class="t-overline" id="legend-title">How to read the archive</h2>
+            <button class="text-btn" type="button" data-action="hide-legend">Got it, hide this</button>
+          </div>
+          <div class="legend-items">
+            <div class="legend-item">
+              <span class="strata strata-lg" aria-hidden="true"><i data-era="arpanet"></i><i data-era="internetworking"></i><i data-era="web"></i><i data-era="scale"></i><i data-era="encryption"></i><i data-era="present"></i></span>
+              <span><b>Color is when</b><span>the era it was published in</span></span>
+            </div>
+            <div class="legend-item">
+              <i class="glyph gl-P" aria-hidden="true"></i>
+              <span><b>Shape is what</b><span>its status: <i class="glyph glyph-inline gl-P" aria-hidden="true"></i> proposed → <i class="glyph glyph-inline gl-I" aria-hidden="true"></i> standard</span></span>
+            </div>
+            <div class="legend-item">
+              <i class="glyph gl-Io" aria-hidden="true"></i>
+              <span><b>Hollow means replaced</b><span>a newer RFC supersedes it</span></span>
+            </div>
+          </div>
+        </section>
+
+        <button class="legend-link" id="legend-link" type="button" data-action="legend">
+          <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+          <span>How to read the archive — color is when, shape is what</span>
+        </button>
+
+        <div id="banner"></div>
+        <div class="list" id="list" aria-label="All RFCs, newest first"></div>
+        <div class="list-end" id="list-end" hidden></div>
+      </div>
+
+      <aside class="rail rail-right" aria-label="RFCs per year">
+        <div class="tl" id="timeline"></div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ── A document ──────────────────────────────────────── -->
+  <div class="view" id="view-doc" hidden></div>
+</main>
+
+<footer class="footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="brand" href="#/">
+        <span class="strata" aria-hidden="true"><i data-era="arpanet"></i><i data-era="internetworking"></i><i data-era="web"></i><i data-era="scale"></i><i data-era="encryption"></i><i data-era="present"></i></span>
+        <span class="brand-name">RFC Editor</span>
+      </a>
+      <div>
+        <p class="footer-tag">The home of RFCs</p>
+        <p class="t-mono-s footer-issn">The RFC Series · ISSN 2070-1721</p>
+      </div>
+    </div>
+    <div class="footer-cols">
+      <div><h2>Browse</h2><a href="#/">All RFCs</a><button type="button" data-action="jump-eras">By era</button><a href="#/kind/I">Standards (STD)</a><a href="#/kind/B">Best Current Practices</a><a href="#/errata">Errata</a></div>
+      <div><h2>Learn</h2><a href="https://www.rfc-editor.org/series/rfc/" target="_blank" rel="noopener">What is an RFC?</a><a href="#/rfc/2119">Reading an RFC</a><button type="button" data-action="legend">Status, explained</button><button type="button" data-action="glossary">Glossary</button><a href="https://www.rfc-editor.org/series/rfc-faq/" target="_blank" rel="noopener">FAQ</a></div>
+      <div><h2>Contribute</h2><a href="https://authors.ietf.org/" target="_blank" rel="noopener">How RFCs are created</a><a href="#/rfc/7322">Style guide</a><a href="https://www.rfc-editor.org/authors/rfc-independent-submissions/" target="_blank" rel="noopener">Independent submissions</a><a href="https://errata.rfc-editor.org/" target="_blank" rel="noopener">Report an erratum</a></div>
+      <div><h2>About</h2><a href="https://www.rfc-editor.org/about/rfc-editor/" target="_blank" rel="noopener">About the RFC Editor</a><a href="#/rfc/9920">The RFC Series</a><a href="https://www.rfc-editor.org/about/rpc-reports/" target="_blank" rel="noopener">Reports</a><a href="https://www.rfc-editor.org/about/contact/" target="_blank" rel="noopener">Contact</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>Redesign concept · unofficial prototype · data: RFC index, <span data-bind="generated">24 Sep 2026</span> — the real archive is <a href="https://www.rfc-editor.org/" target="_blank" rel="noopener">rfc-editor.org</a></p>
+    <p><a href="https://www.rfc-editor.org/rfcrss.xml" target="_blank" rel="noopener">RSS</a> · <a href="https://mailman.rfc-editor.org/mailman/listinfo/rfc-dist" target="_blank" rel="noopener">rfc-dist</a> · <a href="https://status.ietf.org/" target="_blank" rel="noopener">Status</a> · <a href="https://www.ietf.org/privacy-statement/" target="_blank" rel="noopener">Privacy</a></p>
+  </div>
+</footer>
+
+<!-- ── Sheets ─────────────────────────────────────────────── -->
+<dialog class="sheet-dlg dlg-side" id="dlg-filters" aria-labelledby="dlg-filters-title">
+  <div class="dlg-head">
+    <h2 id="dlg-filters-title">Filters</h2>
+    <button class="icon-btn" type="button" data-action="close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body" id="dlg-filters-body"></div>
+  <div class="dlg-foot"><button class="btn btn-primary btn-block" type="button" data-action="close" id="dlg-filters-done">Show RFCs</button></div>
+</dialog>
+
+<dialog class="sheet-dlg dlg-center" id="dlg-legend" aria-labelledby="dlg-legend-title">
+  <div class="dlg-head">
+    <h2 id="dlg-legend-title">How to read the archive</h2>
+    <button class="icon-btn" type="button" data-action="close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body" id="dlg-legend-body"></div>
+</dialog>
+
+<dialog class="sheet-dlg dlg-center" id="dlg-glossary" aria-labelledby="dlg-glossary-title">
+  <div class="dlg-head">
+    <h2 id="dlg-glossary-title">Glossary</h2>
+    <button class="icon-btn" type="button" data-action="close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <p class="dlg-lede">The words you’ll meet in the archive, in plain language.</p>
+    <dl class="glossary">
+      <dt>RFC</dt><dd>“Request for Comments” — a numbered document in the RFC Series. Once published, an RFC is never changed; a new RFC is written instead.</dd>
+      <dt>Internet-Draft</dt><dd>A working document. Drafts that are approved are published as RFCs; the rest expire.</dd>
+      <dt>Status</dt><dd>What kind of document it is: Proposed, Draft or Internet Standard on the standards track, or Best Current Practice, Informational, Experimental or Historic.</dd>
+      <dt>STD</dt><dd>The Internet Standard sub-series: a stable number for a mature standard, pointing to the RFCs that currently make it up (STD 97 is RFC 9110).</dd>
+      <dt>BCP</dt><dd>Best Current Practice: advice on how to run the internet and its processes (BCP 14 is RFC 2119 and RFC 8174).</dd>
+      <dt>FYI</dt><dd>“For Your Information”: a retired sub-series of introductory documents.</dd>
+      <dt>Obsoleted</dt><dd>Replaced: a newer RFC takes over completely. The older RFC stays in the archive, exactly as it was.</dd>
+      <dt>Updated</dt><dd>A newer RFC changes or adds to part of this one. Read the two together.</dd>
+      <dt>Errata</dt><dd>Corrections reported after publication. They are listed beside an RFC, never written into it.</dd>
+      <dt>Stream</dt><dd>Who published it: the IETF, IAB, IRTF, Independent Submissions or the Editorial stream. Early RFCs, from before streams existed, are marked Legacy.</dd>
+      <dt>MUST, SHOULD, MAY</dt><dd>Requirement key words, defined in RFC 2119 and RFC 8174 (together, BCP 14).</dd>
+      <dt>ABNF</dt><dd>Augmented Backus–Naur Form: the grammar notation many RFCs use to define syntax (RFC 5234).</dd>
+    </dl>
+  </div>
+</dialog>
+
+<dialog class="sheet-dlg dlg-center" id="dlg-jump" aria-labelledby="dlg-jump-title">
+  <div class="dlg-head">
+    <h2 id="dlg-jump-title">Jump to…</h2>
+    <button class="icon-btn" type="button" data-action="close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Jump by">
+    <button type="button" role="tab" id="tab-eras" aria-controls="jump-eras" aria-selected="true" data-tab="eras">Eras</button>
+    <button type="button" role="tab" id="tab-years" aria-controls="jump-years" aria-selected="false" data-tab="years">Years</button>
+    <button type="button" role="tab" id="tab-streams" aria-controls="jump-streams" aria-selected="false" data-tab="streams">Streams</button>
+  </div>
+  <div class="dlg-body">
+    <div role="tabpanel" id="jump-eras" aria-labelledby="tab-eras"></div>
+    <div role="tabpanel" id="jump-years" aria-labelledby="tab-years" hidden></div>
+    <div role="tabpanel" id="jump-streams" aria-labelledby="tab-streams" hidden></div>
+  </div>
+</dialog>
+
+<dialog class="sheet-dlg dlg-top" id="dlg-menu" aria-label="Menu">
+  <div class="dlg-head dlg-head-menu">
+    <a class="brand" href="#/" data-action="close">
+      <span class="strata" aria-hidden="true"><i data-era="arpanet"></i><i data-era="internetworking"></i><i data-era="web"></i><i data-era="scale"></i><i data-era="encryption"></i><i data-era="present"></i></span>
+      <span class="brand-name">RFC Editor</span>
+    </a>
+    <button class="icon-btn" type="button" data-action="close" aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body" id="dlg-menu-body"></div>
+</dialog>
+
+<dialog class="sheet-dlg dlg-full" id="dlg-search" aria-label="Search the archive">
+  <div class="msearch-top">
+    <div class="search-field is-focused">
+      <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+      <input class="search-input" id="msearch-input" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go"
+             placeholder="Search — a number, a title, a name"
+             role="combobox" aria-expanded="true" aria-controls="msearch-list" aria-autocomplete="list" aria-label="Search the archive">
+    </div>
+    <button class="text-btn msearch-cancel" type="button" data-action="close">Cancel</button>
+  </div>
+  <div class="msearch-body" id="msearch-pop"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

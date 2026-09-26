@@ -1,0 +1,163 @@
+/*
+ * RFC Editor redesign — design tokens (v0.3)
+ * Exported from the Figma variables in file d4ODFIKoRq0pxCiRKuAPNm.
+ * Names follow each variable's WEB code syntax, e.g. bg/canvas → --color-bg-canvas.
+ * Collections: Primitives · Color (Light / Dark) · Dimension · Typography · Effects
+ */
+
+:root {
+  /* ── Primitives · warm paper neutrals ─────────────────────────── */
+  --neutral-0: #ffffff;
+  --neutral-25: #fbf7f0;
+  --neutral-50: #f6f2ea;
+  --neutral-100: #f0ece4;
+  --neutral-150: #e8e3db;
+  --neutral-200: #ddd9d0;
+  --neutral-300: #d1cdc4;
+  --neutral-400: #aaa69e;
+  --neutral-500: #8d8983;
+  --neutral-600: #716e68;
+  --neutral-700: #4e4b46;
+  --neutral-750: #3d3a36;
+  --neutral-800: #312f2a;
+  --neutral-850: #262420;
+  --neutral-900: #1a1915;
+  --neutral-950: #12110e;
+  --neutral-1000: #080706;
+
+  /* ── Primitives · era hues (OKLCH ramps) ───────────────────────── */
+  --ochre-50: #faf4e8; --ochre-100: #f4e6ce; --ochre-200: #e9d3ac; --ochre-300: #d9bb83; --ochre-400: #c39d52;
+  --ochre-500: #ab8020; --ochre-600: #926a00; --ochre-700: #775601; --ochre-800: #5c4101; --ochre-900: #422e01;
+  --clay-50: #fef1ed; --clay-100: #fee0d7; --clay-200: #f8cabb; --clay-300: #eeae9a; --clay-400: #db8c73;
+  --clay-500: #c36c51; --clay-600: #a8573e; --clay-700: #8b452f; --clay-800: #6c3422; --clay-900: #4d2417;
+  --rose-50: #fef1f2; --rose-100: #ffdfe3; --rose-200: #f9c7cf; --rose-300: #eeaab5; --rose-400: #dc8696;
+  --rose-500: #c4667a; --rose-600: #a95265; --rose-700: #8c4051; --rose-800: #6c303d; --rose-900: #4d212b;
+  --violet-50: #f6f2fd; --violet-100: #ebe3fa; --violet-200: #dccff2; --violet-300: #c8b5e6; --violet-400: #ae95d4;
+  --violet-500: #9378bc; --violet-600: #7d62a2; --violet-700: #664f86; --violet-800: #4e3c68; --violet-900: #372a4a;
+  --blue-50: #eef5fe; --blue-100: #d9eafd; --blue-200: #bfd9f7; --blue-300: #9ec3ed; --blue-400: #78a7dc;
+  --blue-500: #568bc5; --blue-600: #4374ab; --blue-700: #335f8d; --blue-800: #26486e; --blue-900: #1a334e;
+  --teal-50: #ecf7f6; --teal-100: #d5eeea; --teal-200: #b8dfda; --teal-300: #93ccc5; --teal-400: #67b3aa;
+  --teal-500: #3c9990; --teal-600: #268179; --teal-700: #186a63; --teal-800: #10514b; --teal-900: #0b3a35;
+
+  /* ── Dimension ─────────────────────────────────────────────────── */
+  --space-0: 0px; --space-2: 2px; --space-4: 4px; --space-8: 8px; --space-12: 12px; --space-16: 16px;
+  --space-20: 20px; --space-24: 24px; --space-32: 32px; --space-40: 40px; --space-48: 48px; --space-64: 64px;
+  --space-80: 80px; --space-96: 96px; --space-128: 128px; --space-160: 160px;
+  --radius-none: 0px; --radius-xs: 2px; --radius-sm: 4px; --radius-full: 999px;
+  --stroke-hairline: 1px; --stroke-focus: 2px;
+  --size-dot: 8px; --size-icon-sm: 16px; --size-icon: 24px; --size-touch-min: 44px; --size-control: 48px;
+  --size-header: 56px; --size-row: 64px; --size-number-cell: 88px;
+  --measure-prose: 680px; --measure-plaintext: 605px;
+
+  /* ── Typography ────────────────────────────────────────────────── */
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600;
+
+  /* ── Effects ───────────────────────────────────────────────────── */
+  --effect-overlay: 0 1px 2px rgb(19 21 20 / 0.06), 0 12px 32px -4px rgb(19 21 20 / 0.10);
+  --effect-sheet: 0 1px 2px rgb(26 25 21 / 0.05), 0 10px 28px -6px rgb(26 25 21 / 0.07);
+  --scrim: rgb(26 25 21 / 0.22);
+}
+
+/* ── Color · Light (default) ─────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --color-bg-canvas: var(--neutral-25);
+  --color-bg-subtle: var(--neutral-50);
+  --color-bg-muted: var(--neutral-150);
+  --color-bg-muted-hover: var(--neutral-200);
+  --color-bg-hover: var(--neutral-100);
+  --color-bg-inverse: var(--neutral-900);
+  --color-bg-inverse-hover: var(--neutral-750);
+  --color-bg-disabled: var(--neutral-100);
+  --color-bg-surface: var(--neutral-0);
+  --color-text-primary: var(--neutral-900);
+  --color-text-secondary: var(--neutral-700);
+  --color-text-muted: var(--neutral-600);
+  --color-text-disabled: var(--neutral-400);
+  --color-text-inverse: var(--neutral-0);
+  --color-text-inverse-muted: var(--neutral-400);
+  --color-border-default: var(--neutral-300);
+  --color-border-subtle: var(--neutral-150);
+  --color-border-strong: var(--neutral-900);
+  --color-border-on-inverse: var(--neutral-700);
+  --color-icon-primary: var(--neutral-900);
+  --color-icon-muted: var(--neutral-600);
+  --color-icon-inverse: var(--neutral-0);
+  --color-icon-disabled: var(--neutral-400);
+  --color-focus-ring: var(--neutral-900);
+  --color-status-glyph: var(--neutral-700);
+
+  --color-era-arpanet-accent: var(--ochre-500);
+  --color-era-arpanet-tint: var(--ochre-100);
+  --color-era-arpanet-text: var(--ochre-700);
+  --color-era-internetworking-accent: var(--clay-500);
+  --color-era-internetworking-tint: var(--clay-100);
+  --color-era-internetworking-text: var(--clay-700);
+  --color-era-web-accent: var(--rose-500);
+  --color-era-web-tint: var(--rose-100);
+  --color-era-web-text: var(--rose-700);
+  --color-era-scale-accent: var(--violet-500);
+  --color-era-scale-tint: var(--violet-100);
+  --color-era-scale-text: var(--violet-700);
+  --color-era-encryption-accent: var(--blue-500);
+  --color-era-encryption-tint: var(--blue-100);
+  --color-era-encryption-text: var(--blue-700);
+  --color-era-present-accent: var(--teal-500);
+  --color-era-present-tint: var(--teal-100);
+  --color-era-present-text: var(--teal-700);
+}
+
+/* ── Color · Dark ────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg-canvas: var(--neutral-950);
+  --color-bg-subtle: var(--neutral-850);
+  --color-bg-muted: var(--neutral-800);
+  --color-bg-muted-hover: var(--neutral-750);
+  --color-bg-hover: var(--neutral-850);
+  --color-bg-inverse: var(--neutral-100);
+  --color-bg-inverse-hover: var(--neutral-300);
+  --color-bg-disabled: var(--neutral-850);
+  --color-bg-surface: var(--neutral-900);
+  --color-text-primary: var(--neutral-100);
+  --color-text-secondary: var(--neutral-300);
+  --color-text-muted: var(--neutral-500);
+  --color-text-disabled: var(--neutral-700);
+  --color-text-inverse: var(--neutral-950);
+  --color-text-inverse-muted: var(--neutral-700);
+  --color-border-default: var(--neutral-750);
+  --color-border-subtle: var(--neutral-800);
+  --color-border-strong: var(--neutral-100);
+  --color-border-on-inverse: var(--neutral-300);
+  --color-icon-primary: var(--neutral-100);
+  --color-icon-muted: var(--neutral-500);
+  --color-icon-inverse: var(--neutral-950);
+  --color-icon-disabled: var(--neutral-700);
+  --color-focus-ring: var(--neutral-50);
+  --color-status-glyph: var(--neutral-300);
+
+  --color-era-arpanet-accent: var(--ochre-400);
+  --color-era-arpanet-tint: var(--ochre-900);
+  --color-era-arpanet-text: var(--ochre-300);
+  --color-era-internetworking-accent: var(--clay-400);
+  --color-era-internetworking-tint: var(--clay-900);
+  --color-era-internetworking-text: var(--clay-300);
+  --color-era-web-accent: var(--rose-400);
+  --color-era-web-tint: var(--rose-900);
+  --color-era-web-text: var(--rose-300);
+  --color-era-scale-accent: var(--violet-400);
+  --color-era-scale-tint: var(--violet-900);
+  --color-era-scale-text: var(--violet-300);
+  --color-era-encryption-accent: var(--blue-400);
+  --color-era-encryption-tint: var(--blue-900);
+  --color-era-encryption-text: var(--blue-300);
+  --color-era-present-accent: var(--teal-400);
+  --color-era-present-tint: var(--teal-900);
+  --color-era-present-text: var(--teal-300);
+
+  --effect-overlay: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -4px rgb(0 0 0 / 0.5);
+  --effect-sheet: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 28px -6px rgb(0 0 0 / 0.45);
+  --scrim: rgb(0 0 0 / 0.5);
+}
