@@ -14,10 +14,20 @@ let rafScroll = 0;
 let viewEl;
 let barEl;
 let tocPanel;
+let toTop;
+let footerEl;
 
 export function init() {
   viewEl = $('#view-doc');
   barEl = $('#docbar');
+  footerEl = $('footer');
+  toTop = document.createElement('button');
+  toTop.type = 'button';
+  toTop.className = 'to-top';
+  toTop.dataset.action = 'to-top';
+  toTop.setAttribute('aria-label', 'Back to top');
+  toTop.innerHTML = `${icon('arrow-up')}<span>Back to top</span>`;
+  document.body.append(toTop);
   tocPanel = document.createElement('div');
   tocPanel.className = 'tocpanel';
   tocPanel.id = 'tocpanel';
@@ -39,6 +49,7 @@ export function onHide() {
   headerIO?.disconnect();
   barEl.classList.remove('is-on');
   barEl.hidden = true;
+  toTop.classList.remove('is-on');
   closeToc();
   viewEl.innerHTML = '';
 }
@@ -49,6 +60,7 @@ export function show(n, section) {
   closeToc();
   const rec = db.byN.get(n);
   window.scrollTo(0, 0);
+  toTop.classList.remove('is-on');
   if (!rec) {
     cur = null;
     viewEl.innerHTML = notFoundHTML(n);
@@ -110,7 +122,7 @@ function pageHTML(r) {
           <span class="status ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i>${statusLabel(r)}</span>
           ${ids}
         </div>
-        <h1 class="doc-title" id="doc-title">${esc(r.title)}</h1>
+        <h1 class="doc-title" id="doc-title" tabindex="-1">${esc(r.title)}</h1>
         <p class="byline">RFC ${r.n} · ${monthYear(r)}${r.authors.length ? ` · ${esc(authorsFull(r))}` : ''}</p>
       </header>
       ${noticesHTML(r)}
@@ -418,10 +430,12 @@ function measureHeads() {
 }
 
 function onScroll() {
-  if (rafScroll || !cur?.heads.length) return;
+  if (rafScroll || !cur) return;
   rafScroll = requestAnimationFrame(() => {
     rafScroll = 0;
     if (!cur) return;
+    placeToTop();
+    if (!cur.heads.length) return;
     const y = window.scrollY + navHeight() + 56 + 40;
     let current = cur.heads[0];
     for (const h of cur.heads) { if (h.top <= y) current = h; else break; }
@@ -440,11 +454,29 @@ function setFit(fit) {
   requestAnimationFrame(measureHeads);
 }
 
+// ── Back to top ───────────────────────────────────────────────────────
+// Shows once the reader is well into an RFC; at the end of the page it rides up with
+// the footer instead of covering it.
+function placeToTop() {
+  toTop.classList.toggle('is-on', window.scrollY > window.innerHeight * 1.5);
+  const lift = Math.max(0, window.innerHeight - footerEl.getBoundingClientRect().top);
+  toTop.style.setProperty('--lift', `${Math.round(lift)}px`);
+}
+// A long RFC runs to hundreds of screens: skip most of the way at once, then glide the rest.
+function backToTop() {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const glide = window.innerHeight * 2;
+  if (!reduce && window.scrollY > glide) window.scrollTo(0, glide);
+  window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  $('#doc-title', viewEl)?.focus({ preventScroll: true });
+}
+
 // ── Actions ───────────────────────────────────────────────────────────
 function onClick(e) {
   const t = e.target.closest('[data-action]');
   if (t && cur) {
     const a = t.dataset.action;
+    if (a === 'to-top') { backToTop(); return; }
     if (a === 'toc') { e.preventDefault(); toggleToc(); return; }
     if (a === 'fit') { setFit($('#sheet', viewEl).classList.contains('is-actual')); return; }
     if (a === 'cite') { copyCitation(cur.rec); return; }
