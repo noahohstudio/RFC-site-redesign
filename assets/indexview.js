@@ -288,14 +288,18 @@ function rebuild({ keep }) {
   updateCurrent(true);
 }
 
-// Era rooms settle in the first time they come into view.
+// Era rooms settle in every time they come into view, and quietly reset once they're
+// fully off screen, so walking back into one plays it again.
 let eraIO = null;
 function watchEras() {
   eraIO?.disconnect();
   if (!('IntersectionObserver' in window)) return;
   eraIO = new IntersectionObserver((entries) => {
-    for (const en of entries) if (en.isIntersecting) { en.target.classList.add('is-in'); eraIO.unobserve(en.target); }
-  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+    for (const en of entries) {
+      if (en.isIntersecting && en.intersectionRatio >= 0.15) en.target.classList.add('is-in');
+      else if (!en.isIntersecting) en.target.classList.remove('is-in');
+    }
+  }, { threshold: [0, 0.15] });
   $$('.era-div', listEl).forEach((d) => eraIO.observe(d));
   listEl.classList.add('eras-arrive');
 }

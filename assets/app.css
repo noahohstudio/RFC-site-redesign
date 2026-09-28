@@ -982,12 +982,14 @@ html.is-locked { overflow: hidden; }
 .sheet { animation-delay: 120ms; }
 .doc-shell > .rail { animation: arrive-fade var(--motion-duration-slow) var(--motion-ease-enter) 150ms both; }
 .pt { animation: arrive-fade var(--motion-duration-base) var(--motion-ease-enter); } /* the text, as it arrives from rfc-editor.org */
-/* an era room: its words rise and its bars grow the first time it comes into view */
-.era-div-body > *, .era-div-axis { transition: opacity var(--motion-duration-slow) var(--motion-ease-enter), transform var(--motion-duration-slow) var(--motion-ease-enter); }
-.era-div-body > :nth-child(2) { transition-delay: 40ms; }
-.era-div-body > :nth-child(3) { transition-delay: 80ms; }
-.era-div-body > :nth-child(4), .era-div-axis { transition-delay: 120ms; }
-.era-div-bars i { transform-origin: bottom; transition: transform 480ms var(--motion-ease-enter) calc(80ms + var(--i, 0) * 14ms); }
+/* an era room: its words rise and its bars grow each time it comes into view; the reset,
+   once it's fully off screen, is instant, so every return plays from the start */
+.era-div.is-in .era-div-body > *, .era-div.is-in .era-div-axis { transition: opacity var(--motion-duration-slow) var(--motion-ease-enter), transform var(--motion-duration-slow) var(--motion-ease-enter); }
+.era-div.is-in .era-div-body > :nth-child(2) { transition-delay: 40ms; }
+.era-div.is-in .era-div-body > :nth-child(3) { transition-delay: 80ms; }
+.era-div.is-in .era-div-body > :nth-child(4), .era-div.is-in .era-div-axis { transition-delay: 120ms; }
+.era-div-bars i { transform-origin: bottom; }
+.era-div.is-in .era-div-bars i { transition: transform 480ms var(--motion-ease-enter) calc(80ms + var(--i, 0) * 14ms); }
 @media (prefers-reduced-motion: no-preference) {
   .eras-arrive .era-div:not(.is-in) .era-div-body > *, .eras-arrive .era-div:not(.is-in) .era-div-axis { opacity: 0; transform: translateY(8px); }
   .eras-arrive .era-div:not(.is-in) .era-div-bars i { transform: scaleY(0); }
