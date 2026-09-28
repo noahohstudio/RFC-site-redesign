@@ -260,8 +260,9 @@ button.res-row { width: 100%; text-align: left; }
 .rail { position: sticky; top: calc(var(--size-row) + 40px); align-self: start; }
 .rail-left .rail-inner {
   max-height: calc(100vh - var(--size-row) - 40px); overflow: auto; overscroll-behavior: contain;
-  padding-bottom: 24px; scrollbar-width: thin; margin-right: -8px; padding-right: 8px;
+  padding-bottom: 24px; scrollbar-width: none; /* it still scrolls; the edge fades say there's more */
 }
+.rail-left .rail-inner::-webkit-scrollbar { display: none; }
 .m-search { display: none; }
 /* the left rail scrolls on its own: a soft fade marks the edge that has more behind it */
 .rail-left::before, .rail-left::after {
