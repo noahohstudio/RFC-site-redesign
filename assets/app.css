@@ -950,6 +950,9 @@ html.is-locked { overflow: hidden; }
 #view-index:not([hidden]) .welcome > :nth-child(n+3) { animation-delay: 80ms; }
 #view-index:not([hidden]) .legend, #view-index:not([hidden]) .chips-row { animation-delay: 120ms; }
 .yr.arrive { animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) 160ms both; }
+/* library rows fade in as the list's window reaches them — while scrolling, or wherever a jump lands */
+@keyframes row-in { from { opacity: 0; } }
+.yr-rows > .row { animation: row-in var(--motion-duration-base) var(--motion-ease-enter) both; }
 .doc-main > .crumbs, .doc-head, .doc-notices, .note, .sheet { animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) both; }
 .doc-head { animation-delay: 30ms; }
 .doc-notices { animation-delay: 60ms; }

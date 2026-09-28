@@ -26,7 +26,6 @@ const state = {
 };
 
 let listEl, railEl, chipsEl, bannerEl, endEl, tlEl, scrubEl, scrubTrack;
-let io = null;
 let rafScroll = 0;
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -55,7 +54,6 @@ export function init() {
   if (store.get('rfc-legend') === 'hidden') document.body.classList.add('legend-hidden');
 
   state.mode = modeFor(listEl.clientWidth);
-  io = new IntersectionObserver(onIntersect, { rootMargin: '1600px 0px 1600px 0px' });
 
   renderRailAndFilters();
   wireRailFade();
@@ -81,8 +79,17 @@ export function onShow() { state.visible = true; requestAnimationFrame(checkLayo
 // Row layout follows the list's own width (wide · medium · compact), like a container query.
 function checkLayout() {
   if (!state.visible) return;
-  const m = modeFor(listEl.clientWidth);
-  if (m !== state.mode) { state.mode = m; rebuild({ keep: true }); }
+  const w = listEl.clientWidth;
+  const m = modeFor(w);
+  if (m !== state.mode) {
+    state.mode = m;
+    rebuild({ keep: true });
+  } else if (w !== state.listW) {
+    // same mode, new width: rows re-wrap, so their heights are re-estimated once resizing settles
+    state.listW = w;
+    clearTimeout(state.relayout);
+    state.relayout = setTimeout(() => rebuild({ keep: true }), 150);
+  }
   layoutTimeline();
   positionScrubWindow();
   updateCurrent(true);
@@ -135,15 +142,16 @@ export function jumpToYear(year, { flash = true } = {}) {
   if (i === -1) i = state.sections.length - 1;
   const sec = state.sections[i];
   if (!sec) return;
-  for (let k = Math.max(0, i - 1); k < Math.min(i + 2, state.sections.length); k++) renderSection(state.sections[k], false);
-  const top = sec.el.getBoundingClientRect().top + window.scrollY - navHeight() - (mqPhone.matches ? 48 : 0);
-  window.scrollTo(0, Math.max(0, top));
+  const target = () => sec.el.getBoundingClientRect().top - navHeight() - (mqPhone.matches ? 48 : 0);
+  window.scrollTo(0, Math.max(0, window.scrollY + target()));
   if (flash) {
     sec.el.classList.remove('is-flash');
     void sec.el.offsetWidth;
     sec.el.classList.add('is-flash');
   }
-  updateCurrent(true);
+  updateCurrent(true); // the rows here are built now, and fade in
+  const d = target(); // measuring them may have nudged the year above; settle exactly
+  if (Math.abs(d) > 0.5 && window.scrollY + d >= 0) { window.scrollBy(0, d); updateCurrent(true); }
 }
 
 export function jumpToEra(key) {
@@ -151,11 +159,11 @@ export function jumpToEra(key) {
   if (!era) return;
   const div = $(`#era-${key}`, listEl);
   if (div) {
-    const next = state.sections.find((s) => s.era === key);
-    if (next) renderSection(next, false);
-    const top = div.getBoundingClientRect().top + window.scrollY - navHeight() - (mqPhone.matches ? 56 : 16);
-    window.scrollTo(0, Math.max(0, top));
+    const target = () => div.getBoundingClientRect().top - navHeight() - (mqPhone.matches ? 56 : 16);
+    window.scrollTo(0, Math.max(0, window.scrollY + target()));
     updateCurrent(true);
+    const d = target();
+    if (Math.abs(d) > 0.5 && window.scrollY + d >= 0) { window.scrollBy(0, d); updateCurrent(true); }
     return;
   }
   const first = state.sections.find((s) => s.era === key) || state.sections.find((s) => s.year <= era.to);
@@ -211,47 +219,43 @@ const viewActive = () => state.view.type !== 'all' || filtersActive();
 // Remember the row at the top of the screen so a rebuild (filters, rotation) keeps your place.
 // updateCurrent() refreshes state.anchor while scrolling, before any reflow happens.
 const stickyTop = () => navHeight() + (mqPhone.matches ? 48 : 0);
+// Row positions come from each year's running heights, so the row at the top is known
+// whether or not it's currently built.
 function topRow(s, top) {
-  const rows = s.rowsEl.children;
-  let lo = 0;
-  let hi = rows.length - 1;
-  let found = -1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (rows[mid].getBoundingClientRect().bottom > top) { found = mid; hi = mid - 1; } else lo = mid + 1;
-  }
-  if (found === -1) return null;
-  const row = rows[found];
-  return { year: s.year, n: Number(row.getAttribute('href').split('/').pop()), offset: row.getBoundingClientRect().top - top };
+  if (!s.recs.length) return null;
+  const r = s.rowsEl.getBoundingClientRect();
+  const k = Math.min(s.recs.length - 1, rowAt(s.off, top - r.top));
+  return { year: s.year, n: s.recs[k].n, offset: r.top + s.off[k] - top };
 }
 function captureAnchor() {
   const top = stickyTop();
   if (listEl.getBoundingClientRect().top >= top) return null;
   for (const s of state.sections) {
     if (s.el.getBoundingClientRect().bottom <= top) continue;
-    return (s.rendered && topRow(s, top)) || { year: s.year, n: null, offset: 0 };
+    return topRow(s, top) || { year: s.year, n: null, offset: 0 };
   }
   return null;
 }
 function restoreAnchor(a) {
   if (!a) return;
-  const sec = a.n != null ? state.sections.find((s) => s.recs.some((r) => r.n === a.n)) : null;
-  if (sec) {
-    const i = state.sections.indexOf(sec);
-    for (let k = Math.max(0, i - 1); k <= Math.min(i + 1, state.sections.length - 1); k++) renderSection(state.sections[k], false);
-    const row = sec.rowsEl.querySelector(`a[href="#/rfc/${a.n}"]`);
-    if (row) { window.scrollTo(0, row.getBoundingClientRect().top + window.scrollY - stickyTop() - a.offset); return; }
-  }
-  jumpToYear(a.year, { flash: false });
+  const s = a.n != null ? state.sections.find((x) => x.recs.some((r) => r.n === a.n)) : null;
+  if (!s) { jumpToYear(a.year, { flash: false }); return; }
+  const k = s.recs.findIndex((r) => r.n === a.n);
+  const off = () => s.rowsEl.getBoundingClientRect().top + s.off[k] - (stickyTop() + a.offset);
+  window.scrollBy(0, off());
+  renderWindow();
+  const d = off(); // rows measured on arrival may have nudged it; settle exactly
+  if (Math.abs(d) > 0.5) { window.scrollBy(0, d); renderWindow(); }
 }
 
 function rebuild({ keep }) {
   const anchor = keep ? (state.anchor !== undefined ? state.anchor : captureAnchor()) : null;
   const firstBuild = !state.sections.length;
-  io.disconnect();
-  buildQueue.length = 0;
-  geo = null; // re-measure row geometry for this mode and width
+  clearTimeout(state.relayout);
   listEl.dataset.mode = state.mode;
+  state.listW = listEl.clientWidth;
+  const key = `${state.mode}|${state.listW}`;
+  if (key !== heightKey) { heightKey = key; heightCache.clear(); geo = null; } // new layout: re-measure
   const frag = document.createDocumentFragment();
   state.sections = [];
   let prevEra = null;
@@ -272,15 +276,6 @@ function rebuild({ keep }) {
   if (!state.sections.length) {
     listEl.innerHTML = `<div class="list-empty"><p>${state.view.type === 'search' ? `No RFCs match “${esc(state.view.q)}” with these filters.` : 'Nothing here with these filters — tick a few more kinds.'}</p><a class="btn btn-outline btn-sm" href="#/">Show everything</a></div>`;
   }
-  for (const s of state.sections) io.observe(s.el);
-  // render the first screenful straight away so the page never starts blank…
-  for (const s of state.sections.slice(0, 2)) renderSection(s, false);
-  // …and the oldest years too, so arriving at the end never resizes the page under the reader
-  let tail = 0;
-  for (let i = state.sections.length - 1; i >= 2 && tail < 3 * window.innerHeight; i--) {
-    renderSection(state.sections[i], false);
-    tail += state.sections[i].rowsEl.offsetHeight;
-  }
   // the first real rows replace the skeleton with a gentle arrival
   if (firstBuild) state.sections.slice(0, 2).forEach((s) => s.el.classList.add('arrive'));
   watchEras();
@@ -289,7 +284,7 @@ function rebuild({ keep }) {
   updateTimelineCounts();
   updateScrubberCounts();
   updateFilterBadges();
-  restoreAnchor(anchor);
+  if (state.visible) restoreAnchor(anchor);
   updateCurrent(true);
 }
 
@@ -313,8 +308,17 @@ function makeSection(y, recs) {
   el.id = `y${y.year}`;
   el.setAttribute('aria-labelledby', `yh${y.year}`);
   el.innerHTML = `<h2 class="yr-head" id="yh${y.year}"><span class="yr-left"><span class="era-dot" aria-hidden="true"></span><span class="yr-num">${y.year}</span><span class="yr-era">${ERA_BY_KEY[y.era].name}</span></span><span class="yr-rule" aria-hidden="true"></span><span class="yr-count">${countLabel(y, recs.length)}</span></h2><div class="yr-rows"></div>`;
-  const sec = { year: y.year, era: y.era, recs, el, rowsEl: el.lastElementChild, rendered: false };
-  sec.rowsEl.style.height = `${estimate(recs)}px`;
+  // h: each row's height (estimated until it has been on screen, then measured);
+  // off: running totals, so off[k] is row k's top within the year; [from, to) is what's built
+  const n = recs.length;
+  const sec = { year: y.year, era: y.era, recs, el, rowsEl: el.lastElementChild, h: new Float64Array(n), off: new Float64Array(n + 1), from: 0, to: 0 };
+  for (let i = 0; i < n; i++) {
+    let hh = heightCache.get(recs[i].n);
+    if (hh === undefined) { hh = rowEstimate(recs[i]); heightCache.set(recs[i].n, hh); }
+    sec.h[i] = hh;
+  }
+  sumFrom(sec, 0);
+  padRows(sec);
   el._sec = sec;
   return sec;
 }
@@ -332,12 +336,49 @@ function countLabel(y, shown) {
 // Measured from a hidden probe row in the current mode, so an unbuilt year takes up
 // almost exactly the room it will need: the page doesn't grow or shift as years are built.
 let geo = null;
+// Row heights depend only on the layout (mode and width), never on filters, so they're
+// kept across rebuilds: estimated once, and replaced by the real height once measured.
+const heightCache = new Map(); // RFC number → row height
+let heightKey = '';
 const measureCtx = document.createElement('canvas').getContext('2d');
 const labelWidths = new Map();
 function textWidth(font, s) { measureCtx.font = font; return measureCtx.measureText(s).width; }
-function avgCharWidth(font, strings) {
-  const s = strings.join('');
-  return s.length ? textWidth(font, s) / s.length : 8;
+// Wrap text the way the browser does — greedily, breaking at spaces and after hyphens —
+// so a row's line count is known exactly before the row exists. Word widths are cached.
+const wordCaches = new Map(); // font → (word → width)
+function widthsFor(font) {
+  let cache = wordCaches.get(font);
+  if (!cache) {
+    measureCtx.font = font;
+    cache = new Map();
+    cache.space = measureCtx.measureText(' ').width;
+    cache.widest = measureCtx.measureText('W').width;
+    wordCaches.set(font, cache);
+  }
+  return cache;
+}
+function lineCount(text, font, max) {
+  if (!text) return 0;
+  const cache = widthsFor(font);
+  if (text.length * cache.widest <= max) return 1; // couldn't wrap even if every letter were a W
+  let lines = 1;
+  let x = 0;
+  for (const word of text.split(' ')) {
+    if (!word) continue;
+    const parts = word.includes('-') ? word.split(/(?<=-)/) : [word];
+    for (let i = 0; i < parts.length; i++) {
+      let w = cache.get(parts[i]);
+      if (w === undefined) {
+        if (measureCtx.font !== cache.font) { measureCtx.font = font; cache.font = measureCtx.font; }
+        w = measureCtx.measureText(parts[i]).width;
+        cache.set(parts[i], w);
+      }
+      const gap = i === 0 && x > 0 ? cache.space : 0;
+      if (x > 0 && x + gap + w > max) { lines++; x = w; } else x += gap + w;
+      while (x > max) { lines++; x -= max; } // a word longer than the line breaks anywhere
+    }
+  }
+  return lines;
 }
 function measureGeometry() {
   const sample = db.list[db.list.length - 1];
@@ -356,7 +397,6 @@ function measureGeometry() {
   const titleW = title.getBoundingClientRect().width;
   const wide = state.mode === 'wide';
   const ownLabel = wide ? textWidth(fonts.trail, statusLabel(plain)) : 0;
-  const recent = db.list.slice(-300);
   const metaLH = parseFloat(cs(meta).lineHeight);
   const probeMetaLines = Math.max(1, Math.round(meta.getBoundingClientRect().height / metaLH));
   geo = {
@@ -369,12 +409,7 @@ function measureGeometry() {
     metaLH,
     relLH: parseFloat(cs(probe.lastElementChild).lineHeight),
     gap: parseFloat(cs($('.row-body', row)).rowGap) || 4,
-    cwTitle: avgCharWidth(fonts.title, recent.map((r) => r.title)),
-    cwMeta: avgCharWidth(fonts.meta, recent.map(rowMeta)),
-    cwRel: avgCharWidth(fonts.rel, recent.map(relationLine)),
   };
-  // phone titles run to 2–3 lines, and each wrapped line leaves a word's worth unused
-  geo.loss = state.mode === 'compact' ? 2.3 * geo.cwTitle : 0;
   probe.remove();
   labelWidths.clear();
 }
@@ -382,79 +417,115 @@ function labelWidth(label) {
   if (!labelWidths.has(label)) labelWidths.set(label, textWidth(geo.fonts.trail, label));
   return labelWidths.get(label);
 }
-function estimate(recs) {
+function rowEstimate(r) {
   if (!geo) measureGeometry();
   const g = geo;
-  let h = 0;
-  for (const r of recs) {
-    const w = Math.max(120, g.wide ? g.span - labelWidth(statusLabel(r)) : g.span);
-    const lines = Math.max(1, Math.ceil((r.title.length * g.cwTitle) / (w - g.loss)));
-    const metaLines = Math.max(1, Math.ceil((rowMeta(r).length * g.cwMeta) / w));
-    const rel = relationLine(r);
-    const relLines = rel ? Math.max(1, Math.ceil((rel.length * g.cwRel) / w)) : 0;
-    h += g.base + (lines - 1) * g.titleLH + (metaLines - 1) * g.metaLH + (relLines ? g.gap + relLines * g.relLH : 0);
-  }
-  return Math.round(h);
+  const w = Math.max(120, g.wide ? g.span - labelWidth(statusLabel(r)) : g.span);
+  const lines = Math.max(1, lineCount(r.title, g.fonts.title, w));
+  const metaLines = Math.max(1, lineCount(rowMeta(r), g.fonts.meta, w));
+  const relLines = lineCount(relationLine(r), g.fonts.rel, w);
+  return g.base + (lines - 1) * g.titleLH + (metaLines - 1) * g.metaLH + (relLines ? g.gap + relLines * g.relLH : 0);
 }
 
-function onIntersect(entries) {
-  for (const en of entries) {
-    if (!en.isIntersecting) continue;
-    // behind the reader: build at once, so the height change is compensated in one step;
-    // on screen: build at once, so nothing fills in visibly;
-    // ahead of the reader: build a slice at a time, between frames
-    const r = en.boundingClientRect;
-    if (r.bottom <= stickyTop()) renderSection(en.target._sec, true);
-    else if (r.top < window.innerHeight) renderSection(en.target._sec, false);
-    else buildLater(en.target._sec);
+// ── The window: only rows near the screen exist ───────────────────────
+// Every year keeps its full height at all times. Rows outside the window are stood in
+// for by the rows container's padding, sized from each row's height — estimated until
+// the row has been on screen once, measured exactly after that. As the reader scrolls,
+// rows about a screen ahead are built (and fade in) and rows a screen behind are
+// dropped, so the page only ever holds a few dozen rows, whichever year you're in.
+const windowMargin = () => Math.max(600, window.innerHeight);
+
+function sumFrom(s, k) {
+  for (let i = k; i < s.recs.length; i++) s.off[i + 1] = s.off[i] + s.h[i];
+}
+function padRows(s) {
+  s.rowsEl.style.paddingTop = `${s.off[s.from]}px`;
+  s.rowsEl.style.paddingBottom = `${s.off[s.recs.length] - s.off[s.to]}px`;
+}
+// The row covering y (px from the top of a year's rows): 0 before the first, n after the last.
+function rowAt(off, y) {
+  const n = off.length - 1;
+  if (y < 0) return 0;
+  if (y >= off[n]) return n;
+  let lo = 0;
+  let hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (off[mid + 1] > y) hi = mid; else lo = mid + 1;
+  }
+  return lo;
+}
+
+function renderWindow() {
+  if (!state.visible || !state.sections.length) return;
+  const margin = windowMargin();
+  const vTop = -margin;
+  const vBot = window.innerHeight + margin;
+  const st = stickyTop();
+  // the row the reader is looking at stays exactly where it is while rows come and go
+  let anchor = null;
+  let anchorTop = 0;
+  const plans = [];
+  for (const s of state.sections) {
+    const r = s.rowsEl.getBoundingClientRect();
+    let i = 0;
+    let j = 0;
+    if (r.bottom > vTop && r.top < vBot) {
+      i = rowAt(s.off, vTop - r.top);
+      j = Math.min(s.recs.length, rowAt(s.off, vBot - r.top) + 1);
+    }
+    if (!anchor && s.to > s.from && r.bottom > st) {
+      for (const row of s.rowsEl.children) {
+        const b = row.getBoundingClientRect();
+        if (b.bottom > st) { anchor = row; anchorTop = b.top; break; }
+      }
+    }
+    if (i !== s.from || j !== s.to) plans.push([s, i, j]);
+  }
+  if (!plans.length) return;
+  const fresh = [];
+  for (const [s, i, j] of plans) setRange(s, i, j, fresh);
+  // measure the rows that just arrived: from now on their heights are exact
+  const touched = new Map();
+  for (const [s, k, el] of fresh) {
+    const hh = el.getBoundingClientRect().height;
+    if (Math.abs(hh - s.h[k]) > 0.5) { s.h[k] = hh; heightCache.set(s.recs[k].n, hh); touched.set(s, Math.min(touched.get(s) ?? k, k)); }
+  }
+  for (const [s, k] of touched) { sumFrom(s, k); padRows(s); }
+  if (anchor && anchor.isConnected) {
+    const d = anchor.getBoundingClientRect().top - anchorTop;
+    if (Math.abs(d) > 0.5) window.scrollBy(0, d);
   }
 }
 
-function renderSection(sec, compensate) {
-  if (!sec || sec.rendered) return;
-  const before = sec.rowsEl.getBoundingClientRect();
-  sec.rowsEl.innerHTML = sec.recs.map(rowHTML).join('');
-  sec.rowsEl.style.height = '';
-  sec.rowsEl.style.minHeight = '';
-  sec.rendered = true;
-  if (compensate && before.bottom <= stickyTop()) {
-    const d = sec.rowsEl.getBoundingClientRect().height - before.height;
-    if (d) window.scrollBy(0, d);
-  }
-}
-
-// Big years hold 400+ RFCs, and building one in a single go stalls scrolling. A year
-// still ahead of the reader is built SLICE rows at a time, one task each, so frames keep
-// flowing; its placeholder keeps the estimated height until the last slice lands.
-const SLICE = 40;
-const buildQueue = [];
-let buildTimer = 0;
-function buildLater(sec) {
-  if (!sec || sec.rendered || buildQueue.includes(sec)) return;
-  buildQueue.push(sec);
-  if (!buildTimer) buildTimer = setTimeout(buildStep, 0);
-}
-function buildStep() {
-  buildTimer = 0;
-  const sec = buildQueue[0];
-  if (!sec) return;
-  if (sec.rendered) {
-    buildQueue.shift();
-  } else if (sec.el.getBoundingClientRect().bottom <= stickyTop()) {
-    buildQueue.shift();
-    renderSection(sec, true); // the reader overtook it: finish now and keep their place
+function setRange(s, i, j, fresh) {
+  const rows = s.rowsEl;
+  const html = (a, b) => s.recs.slice(a, b).map(rowHTML).join('');
+  if (i >= j || j <= s.from || i >= s.to) {
+    // nothing in common with what's built: start over
+    rows.textContent = '';
+    if (i < j) {
+      rows.insertAdjacentHTML('beforeend', html(i, j));
+      [...rows.children].forEach((el, x) => fresh.push([s, i + x, el]));
+    }
   } else {
-    const from = sec.built || 0;
-    if (!from) { sec.rowsEl.style.minHeight = sec.rowsEl.style.height; sec.rowsEl.style.height = ''; }
-    sec.rowsEl.insertAdjacentHTML('beforeend', sec.recs.slice(from, from + SLICE).map(rowHTML).join(''));
-    sec.built = from + SLICE;
-    if (sec.built >= sec.recs.length) {
-      sec.rowsEl.style.minHeight = '';
-      sec.rendered = true;
-      buildQueue.shift();
+    const keepFrom = Math.max(s.from, i);
+    const keepTo = Math.min(s.to, j);
+    for (let k = s.from; k < keepFrom; k++) rows.firstElementChild.remove();
+    for (let k = keepTo; k < s.to; k++) rows.lastElementChild.remove();
+    if (i < keepFrom) {
+      rows.insertAdjacentHTML('afterbegin', html(i, keepFrom));
+      for (let x = 0; x < keepFrom - i; x++) fresh.push([s, i + x, rows.children[x]]);
+    }
+    if (keepTo < j) {
+      rows.insertAdjacentHTML('beforeend', html(keepTo, j));
+      const kids = rows.children;
+      for (let x = 0; x < j - keepTo; x++) fresh.push([s, keepTo + x, kids[kids.length - (j - keepTo) + x]]);
     }
   }
-  if (buildQueue.length) buildTimer = setTimeout(buildStep, 0);
+  s.from = i < j ? i : 0;
+  s.to = i < j ? j : 0;
+  padRows(s);
 }
 
 // The meta line under a row's title, per mode (also used by the height estimate).
@@ -656,6 +727,7 @@ function currentEra() { return focusEra; }
 
 function updateCurrent(force) {
   if (!state.visible || !state.sections.length) return;
+  renderWindow();
   const phone = mqPhone.matches;
   const top = navHeight() + (phone ? 48 : 0) + 4;
   const bottom = window.innerHeight;
@@ -676,7 +748,7 @@ function updateCurrent(force) {
   }
   const st = stickyTop();
   state.anchor = listEl.getBoundingClientRect().top < st && topSec
-    ? ((topSec.rendered && topRow(topSec, st)) || { year: topSec.year, n: null, offset: 0 })
+    ? (topRow(topSec, st) || { year: topSec.year, n: null, offset: 0 })
     : null;
   if (first === null) {
     const lastSec = state.sections[state.sections.length - 1];
