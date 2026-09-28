@@ -40,6 +40,11 @@ export const STREAMS = [
 ];
 
 export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// The build this page was loaded as (tools/stamp.py writes it into index.html). Data
+// files carry it too, so a new deploy is never served from a stale cache.
+export const BUILD = document.querySelector('meta[name="build"]')?.content || 'dev';
+const versioned = (url) => (BUILD === 'dev' ? url : `${url}?v=${BUILD}`);
 const FMT = [['TXT', 1, 'txt'], ['HTML', 2, 'html'], ['PDF', 4, 'pdf'], ['XML', 8, 'xml']];
 
 export const db = {
@@ -64,7 +69,7 @@ export const db = {
 };
 
 export async function loadIndex() {
-  const res = await fetch('data/rfc-index.json');
+  const res = await fetch(versioned('data/rfc-index.json'));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   db.generated = json.generated;
@@ -98,7 +103,7 @@ export async function loadIndex() {
 
 export async function loadAbstracts() {
   if (db.abstracts) return db.abstracts;
-  const res = await fetch('data/abstracts.json');
+  const res = await fetch(versioned('data/abstracts.json'));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   db.abstracts = json.abstracts;
@@ -108,7 +113,7 @@ export async function loadAbstracts() {
 // Crock’s notes: short, plain-language overviews of well-known RFCs, drafted
 // with AI help for the prototype (see the "about" line in data/notes.json).
 export async function loadNotes() {
-  const res = await fetch('data/notes.json');
+  const res = await fetch(versioned('data/notes.json'));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   db.notes = json.notes || {};

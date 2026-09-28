@@ -67,6 +67,17 @@ export function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('is-on'), 2200);
 }
 
+// A newer build is live: a quiet note with a reload, shown once.
+export function showUpdate() {
+  if ($('.update-note')) return;
+  const note = document.createElement('div');
+  note.className = 'update-note';
+  note.setAttribute('role', 'status');
+  note.innerHTML = '<span>A newer version of this prototype is live.</span><button type="button" class="update-reload">Reload</button>';
+  note.querySelector('button').addEventListener('click', () => location.reload());
+  document.body.append(note);
+}
+
 // ── Dialogs ───────────────────────────────────────────────────────────
 export function initDialogs() {
   $$('dialog.sheet-dlg').forEach((d) => {

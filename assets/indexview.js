@@ -489,10 +489,15 @@ function renderWindow() {
   if (!plans.length) return;
   const fresh = [];
   for (const [s, i, j] of plans) setRange(s, i, j, fresh);
-  // measure the rows that just arrived: from now on their heights are exact
+  // measure the rows that just arrived: from now on their heights are exact. Only rows
+  // that arrive in view fade in (after a jump, or a very fast scroll); rows built a screen
+  // ahead would finish fading unseen, so they skip it.
   const touched = new Map();
+  const vh = window.innerHeight;
   for (const [s, k, el] of fresh) {
-    const hh = el.getBoundingClientRect().height;
+    const b = el.getBoundingClientRect();
+    if (b.bottom > 0 && b.top < vh) el.classList.add('arrive');
+    const hh = b.height;
     if (Math.abs(hh - s.h[k]) > 0.5) { s.h[k] = hh; heightCache.set(s.recs[k].n, hh); touched.set(s, Math.min(touched.get(s) ?? k, k)); }
   }
   for (const [s, k] of touched) { sumFrom(s, k); padRows(s); }

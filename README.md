@@ -17,6 +17,22 @@ fetched live from rfc-editor.org. No build step, no framework, no AI model.
 It also works on any static host (Cloudflare Pages, Netlify drop, etc.): serve the folder as-is.
 On Vercel, import the repository with the Framework Preset set to “Other”, no build command, and the root as the output directory.
 
+## Deploying changes
+
+Before each commit, stamp a build:
+
+```bash
+python3 tools/stamp.py
+```
+
+It puts a build stamp into `index.html` (shown in the footer) and into `data/version.json`. Every script, stylesheet
+and data file is then requested with `?v=<build>`, so a deploy is never served from a stale cache. A tab left open on
+an older build offers a reload when you come back to it.
+
+To check smoothness in a real browser, add `?perf` to the address, before the `#`
+(e.g. `…/RFC-site-redesign/?perf#/`). A small meter then shows frames per second, the slowest recent frame and how
+many library rows exist.
+
 ## Run it locally
 
 Opening `index.html` straight from disk won't work, because browsers block `fetch()` for local files. Serve the folder instead:

@@ -973,9 +973,24 @@ html.is-locked { overflow: hidden; }
 #view-index:not([hidden]) .welcome > :nth-child(n+3) { animation-delay: 80ms; }
 #view-index:not([hidden]) .legend, #view-index:not([hidden]) .chips-row { animation-delay: 120ms; }
 .yr.arrive { animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) 160ms both; }
-/* library rows fade in as the list's window reaches them — while scrolling, or wherever a jump lands */
+/* library rows fade in when they arrive in view — wherever a jump lands, or during a very fast scroll */
 @keyframes row-in { from { opacity: 0; } }
-.yr-rows > .row { animation: row-in var(--motion-duration-base) var(--motion-ease-enter) both; }
+.yr-rows > .row.arrive { animation: row-in var(--motion-duration-base) var(--motion-ease-enter) both; }
+
+/* a newer build is live: a quiet note with a reload */
+.update-note {
+  position: fixed; left: 24px; bottom: 24px; z-index: 90; display: flex; align-items: center; gap: 16px;
+  padding: 12px 16px; background: var(--color-bg-inverse); color: var(--color-text-inverse); box-shadow: var(--effect-overlay);
+  font: 500 14px/18px var(--font-sans); animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) both;
+}
+.update-reload { color: inherit; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+@media (max-width: 767px) { .update-note { left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); } }
+
+/* ?perf — a small meter for checking smoothness in a real browser */
+.perf-meter {
+  position: fixed; left: 8px; bottom: 8px; z-index: 95; padding: 4px 8px; pointer-events: none;
+  background: var(--color-bg-inverse); color: var(--color-text-inverse); font: 400 12px/16px var(--font-mono);
+}
 .doc-main > .crumbs, .doc-head, .doc-notices, .note, .sheet { animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) both; }
 .doc-head { animation-delay: 30ms; }
 .doc-notices { animation-delay: 60ms; }

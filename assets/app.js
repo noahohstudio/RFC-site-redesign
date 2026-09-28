@@ -4,7 +4,7 @@
 //   #/search/email     index filtered to matches  #/kind/B       one kind (e.g. BCP)
 //   #/stream/IRTF      one stream                 #/errata       RFCs with errata
 //   #/rfc/9110         a document                 #/rfc/9110/s/3 a section of it
-import { db, loadIndex, loadAbstracts, loadNotes, fmtInt, MONTHS } from './data.js';
+import { db, loadIndex, loadAbstracts, loadNotes, fmtInt, MONTHS, BUILD } from './data.js';
 import { attachAbstracts } from './search.js';
 import * as ui from './ui.js';
 import * as index from './indexview.js';
@@ -48,6 +48,28 @@ async function boot() {
   // someone starts searching, so browsing never pays for them.
   $('#search-input').addEventListener('focus', ensureAbstracts, { once: true });
   $('#msearch-input').addEventListener('focus', ensureAbstracts, { once: true });
+
+  watchForUpdates();
+  // ?perf in the URL: a small meter for checking smoothness in a real browser
+  if (new URLSearchParams(location.search).has('perf')) import('./perf.js');
+}
+
+// A long-open tab keeps running the code it loaded. When a newer build is live, offer a reload.
+function watchForUpdates() {
+  if (BUILD === 'dev') return;
+  let last = 0;
+  const check = async () => {
+    if (document.hidden || Date.now() - last < 60000) return;
+    last = Date.now();
+    try {
+      const res = await fetch('data/version.json', { cache: 'no-store' });
+      const { build } = await res.json();
+      if (build && build !== BUILD) ui.showUpdate();
+    } catch { /* offline: try again later */ }
+  };
+  document.addEventListener('visibilitychange', check);
+  window.addEventListener('focus', check);
+  setInterval(check, 5 * 60000);
 }
 
 let abstractsPromise = null;
@@ -64,6 +86,7 @@ function bindCounts() {
   $$('[data-bind="total"]').forEach((el) => { el.textContent = fmtInt(db.list.length); });
   const [y, m, d] = (db.generated || '').split('-').map(Number);
   if (y) $$('[data-bind="generated"]').forEach((el) => { el.textContent = `${d} ${MONTHS[m - 1].slice(0, 3)} ${y}`; });
+  $$('[data-bind="build"]').forEach((el) => { el.textContent = BUILD; });
 }
 
 function show(next) {
