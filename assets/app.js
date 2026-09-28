@@ -44,10 +44,8 @@ async function boot() {
   window.addEventListener('hashchange', route);
   route();
 
-  // Abstracts make search deeper: fetch them once the page is settled, or as
-  // soon as someone starts searching — whichever comes first.
-  const later = window.requestIdleCallback || ((fn) => setTimeout(fn, 1200));
-  later(ensureAbstracts, { timeout: 4000 });
+  // Abstracts make search deeper, but they're a 4 MB file: fetch them only once
+  // someone starts searching, so browsing never pays for them.
   $('#search-input').addEventListener('focus', ensureAbstracts, { once: true });
   $('#msearch-input').addEventListener('focus', ensureAbstracts, { once: true });
 }

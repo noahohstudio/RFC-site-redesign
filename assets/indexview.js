@@ -247,7 +247,11 @@ function restoreAnchor(a) {
 
 function rebuild({ keep }) {
   const anchor = keep ? (state.anchor !== undefined ? state.anchor : captureAnchor()) : null;
+  const firstBuild = !state.sections.length;
   io.disconnect();
+  buildQueue.length = 0;
+  geo = null; // re-measure row geometry for this mode and width
+  listEl.dataset.mode = state.mode;
   const frag = document.createDocumentFragment();
   state.sections = [];
   let prevEra = null;
@@ -277,6 +281,9 @@ function rebuild({ keep }) {
     renderSection(state.sections[i], false);
     tail += state.sections[i].rowsEl.offsetHeight;
   }
+  // the first real rows replace the skeleton with a gentle arrival
+  if (firstBuild) state.sections.slice(0, 2).forEach((s) => s.el.classList.add('arrive'));
+  watchEras();
   renderBanner();
   renderEnd();
   updateTimelineCounts();
@@ -284,6 +291,18 @@ function rebuild({ keep }) {
   updateFilterBadges();
   restoreAnchor(anchor);
   updateCurrent(true);
+}
+
+// Era rooms settle in the first time they come into view.
+let eraIO = null;
+function watchEras() {
+  eraIO?.disconnect();
+  if (!('IntersectionObserver' in window)) return;
+  eraIO = new IntersectionObserver((entries) => {
+    for (const en of entries) if (en.isIntersecting) { en.target.classList.add('is-in'); eraIO.unobserve(en.target); }
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+  $$('.era-div', listEl).forEach((d) => eraIO.observe(d));
+  listEl.classList.add('eras-arrive');
 }
 
 function makeSection(y, recs) {
@@ -309,26 +328,86 @@ function countLabel(y, shown) {
   return `${fmtInt(total)} ${noun(total)}`;
 }
 
+// ── Height estimates for years not built yet ──────────────────────────
+// Measured from a hidden probe row in the current mode, so an unbuilt year takes up
+// almost exactly the room it will need: the page doesn't grow or shift as years are built.
+let geo = null;
+const measureCtx = document.createElement('canvas').getContext('2d');
+const labelWidths = new Map();
+function textWidth(font, s) { measureCtx.font = font; return measureCtx.measureText(s).width; }
+function avgCharWidth(font, strings) {
+  const s = strings.join('');
+  return s.length ? textWidth(font, s) / s.length : 8;
+}
+function measureGeometry() {
+  const sample = db.list[db.list.length - 1];
+  const plain = { ...sample, title: 'Mm', authors: [], obsoletes: [], obsoletedBy: [], updates: [], updatedBy: [], errata: false, obsolete: false };
+  const probe = document.createElement('div');
+  probe.className = 'yr-rows';
+  probe.style.cssText = `position:absolute;top:0;width:${listEl.clientWidth || 800}px;visibility:hidden;pointer-events:none`;
+  probe.innerHTML = `${rowHTML(plain)}<span class="row-rel">Updates 1</span>`;
+  listEl.append(probe);
+  const row = probe.firstElementChild;
+  const title = $('.row-title', row);
+  const meta = $('.row-meta', row);
+  const trail = $('.row-trail', row);
+  const cs = (el) => getComputedStyle(el);
+  const fonts = { title: cs(title).font, meta: cs(meta).font, rel: cs(probe.lastElementChild).font, trail: cs(trail).font };
+  const titleW = title.getBoundingClientRect().width;
+  const wide = state.mode === 'wide';
+  const ownLabel = wide ? textWidth(fonts.trail, statusLabel(plain)) : 0;
+  const recent = db.list.slice(-300);
+  const metaLH = parseFloat(cs(meta).lineHeight);
+  const probeMetaLines = Math.max(1, Math.round(meta.getBoundingClientRect().height / metaLH));
+  geo = {
+    wide,
+    base: row.getBoundingClientRect().height - (probeMetaLines - 1) * metaLH, // a row with one line each of title and meta
+    // A wide row's title gets whatever its status label leaves: titleW + ownLabel − label(r).
+    span: titleW + ownLabel,
+    fonts,
+    titleLH: parseFloat(cs(title).lineHeight),
+    metaLH,
+    relLH: parseFloat(cs(probe.lastElementChild).lineHeight),
+    gap: parseFloat(cs($('.row-body', row)).rowGap) || 4,
+    cwTitle: avgCharWidth(fonts.title, recent.map((r) => r.title)),
+    cwMeta: avgCharWidth(fonts.meta, recent.map(rowMeta)),
+    cwRel: avgCharWidth(fonts.rel, recent.map(relationLine)),
+  };
+  // phone titles run to 2–3 lines, and each wrapped line leaves a word's worth unused
+  geo.loss = state.mode === 'compact' ? 2.3 * geo.cwTitle : 0;
+  probe.remove();
+  labelWidths.clear();
+}
+function labelWidth(label) {
+  if (!labelWidths.has(label)) labelWidths.set(label, textWidth(geo.fonts.trail, label));
+  return labelWidths.get(label);
+}
 function estimate(recs) {
-  const w = listEl.clientWidth || 800;
+  if (!geo) measureGeometry();
+  const g = geo;
   let h = 0;
   for (const r of recs) {
-    const rel = relationLine(r) ? 20 : 0;
-    if (state.mode === 'compact') {
-      const avail = Math.max(160, w - 4 - 36 - 28);
-      const lines = Math.ceil((r.title.length * 9.4) / avail);
-      h += 45 + lines * 24 + (avail < 290 ? 40 : 20) + rel;
-    } else {
-      const avail = Math.max(200, w - 4 - 88 - 48 - (state.mode === 'wide' ? 190 : 40));
-      const lines = Math.ceil((r.title.length * 9.3) / avail);
-      h += 65 + (lines - 1) * 24 + rel + (state.mode === 'medium' ? 4 : 0);
-    }
+    const w = Math.max(120, g.wide ? g.span - labelWidth(statusLabel(r)) : g.span);
+    const lines = Math.max(1, Math.ceil((r.title.length * g.cwTitle) / (w - g.loss)));
+    const metaLines = Math.max(1, Math.ceil((rowMeta(r).length * g.cwMeta) / w));
+    const rel = relationLine(r);
+    const relLines = rel ? Math.max(1, Math.ceil((rel.length * g.cwRel) / w)) : 0;
+    h += g.base + (lines - 1) * g.titleLH + (metaLines - 1) * g.metaLH + (relLines ? g.gap + relLines * g.relLH : 0);
   }
   return Math.round(h);
 }
 
 function onIntersect(entries) {
-  for (const en of entries) if (en.isIntersecting) renderSection(en.target._sec, true);
+  for (const en of entries) {
+    if (!en.isIntersecting) continue;
+    // behind the reader: build at once, so the height change is compensated in one step;
+    // on screen: build at once, so nothing fills in visibly;
+    // ahead of the reader: build a slice at a time, between frames
+    const r = en.boundingClientRect;
+    if (r.bottom <= stickyTop()) renderSection(en.target._sec, true);
+    else if (r.top < window.innerHeight) renderSection(en.target._sec, false);
+    else buildLater(en.target._sec);
+  }
 }
 
 function renderSection(sec, compensate) {
@@ -336,6 +415,7 @@ function renderSection(sec, compensate) {
   const before = sec.rowsEl.getBoundingClientRect();
   sec.rowsEl.innerHTML = sec.recs.map(rowHTML).join('');
   sec.rowsEl.style.height = '';
+  sec.rowsEl.style.minHeight = '';
   sec.rendered = true;
   if (compensate && before.bottom <= stickyTop()) {
     const d = sec.rowsEl.getBoundingClientRect().height - before.height;
@@ -343,19 +423,59 @@ function renderSection(sec, compensate) {
   }
 }
 
+// Big years hold 400+ RFCs, and building one in a single go stalls scrolling. A year
+// still ahead of the reader is built SLICE rows at a time, one task each, so frames keep
+// flowing; its placeholder keeps the estimated height until the last slice lands.
+const SLICE = 40;
+const buildQueue = [];
+let buildTimer = 0;
+function buildLater(sec) {
+  if (!sec || sec.rendered || buildQueue.includes(sec)) return;
+  buildQueue.push(sec);
+  if (!buildTimer) buildTimer = setTimeout(buildStep, 0);
+}
+function buildStep() {
+  buildTimer = 0;
+  const sec = buildQueue[0];
+  if (!sec) return;
+  if (sec.rendered) {
+    buildQueue.shift();
+  } else if (sec.el.getBoundingClientRect().bottom <= stickyTop()) {
+    buildQueue.shift();
+    renderSection(sec, true); // the reader overtook it: finish now and keep their place
+  } else {
+    const from = sec.built || 0;
+    if (!from) { sec.rowsEl.style.minHeight = sec.rowsEl.style.height; sec.rowsEl.style.height = ''; }
+    sec.rowsEl.insertAdjacentHTML('beforeend', sec.recs.slice(from, from + SLICE).map(rowHTML).join(''));
+    sec.built = from + SLICE;
+    if (sec.built >= sec.recs.length) {
+      sec.rowsEl.style.minHeight = '';
+      sec.rendered = true;
+      buildQueue.shift();
+    }
+  }
+  if (buildQueue.length) buildTimer = setTimeout(buildStep, 0);
+}
+
+// The meta line under a row's title, per mode (also used by the height estimate).
+function rowMeta(r) {
+  const authors = authorsShort(r);
+  if (state.mode === 'compact') return `RFC ${r.n} · ${statusLabel(r)} · ${monthYearShort(r)}`;
+  if (state.mode === 'medium') return `${statusLabel(r)} · ${r.stream} · ${monthYearShort(r)}${authors ? ` · ${authors}` : ''}`;
+  return `${r.stream} · ${monthYear(r)}${authors ? ` · ${authors}` : ''}`;
+}
+
 function rowHTML(r) {
   const rel = relationLine(r);
   const relHTML = rel ? `<span class="row-rel">${rel}</span>` : '';
   const title = esc(r.title);
-  const status = statusLabel(r);
-  const authors = authorsShort(r);
+  const meta = esc(rowMeta(r));
+  const glyph = `<i class="glyph" aria-hidden="true"></i>`;
   if (state.mode === 'compact') {
-    return `<a class="row" href="#/rfc/${r.n}"><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">RFC ${r.n} · ${status} · ${monthYearShort(r)}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i></span></a>`;
+    return `<a class="row" href="#/rfc/${r.n}"><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${meta}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}">${glyph}</span></a>`;
   }
-  if (state.mode === 'medium') {
-    return `<a class="row" href="#/rfc/${r.n}"><span class="row-num">${r.n}</span><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${status} · ${r.stream} · ${monthYearShort(r)}${authors ? ` · ${esc(authors)}` : ''}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i></span></a>`;
-  }
-  return `<a class="row" href="#/rfc/${r.n}"><span class="row-num">${r.n}</span><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${r.stream} · ${monthYear(r)}${authors ? ` · ${esc(authors)}` : ''}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i>${status}</span></a>`;
+  const trail = state.mode === 'medium' ? glyph : `${glyph}${statusLabel(r)}`;
+  return `<a class="row" href="#/rfc/${r.n}"><span class="row-num">${r.n}</span><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${meta}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}">${trail}</span></a>`;
 }
 
 function eraDivider(key) {
@@ -375,7 +495,7 @@ function eraDivider(key) {
       <p class="era-div-meta">${fmtInt(count)} RFCs · ${span} years</p>
     </div>
     <div class="era-div-chart" aria-hidden="true">
-      <div class="era-div-bars">${years.map((y) => `<i style="height:${Math.max(1, Math.round((y.recs.length / db.maxYearCount) * 72))}px" title="${y.year}: ${y.recs.length} RFCs"></i>`).join('')}</div>
+      <div class="era-div-bars">${years.map((y, i) => `<i style="height:${Math.max(1, Math.round((y.recs.length / db.maxYearCount) * 72))}px;--i:${i}" title="${y.year}: ${y.recs.length} RFCs"></i>`).join('')}</div>
       <div class="era-div-axis"><span>${years[0]?.year ?? ''}</span><span>${years[years.length - 1]?.year ?? ''}</span></div>
     </div>`;
   return el;
@@ -520,7 +640,13 @@ function onClick(e) {
 // ── Current position (timeline window, era rail, chips, scrubber) ─────
 let lastFirst = null;
 let lastLast = null;
+// While the page is moving, rows ignore the pointer: no hover fades start and stop under
+// a still cursor. Hover comes back a moment after scrolling stops.
+let scrollIdle = 0;
 function onScroll() {
+  if (!listEl.classList.contains('is-scrolling')) listEl.classList.add('is-scrolling');
+  clearTimeout(scrollIdle);
+  scrollIdle = setTimeout(() => listEl.classList.remove('is-scrolling'), 160);
   if (rafScroll) return;
   rafScroll = requestAnimationFrame(() => { rafScroll = 0; updateCurrent(false); });
 }
@@ -641,7 +767,7 @@ function positionWindow() {
   const i1 = db.maxYear - state.first;
   const i2 = db.maxYear - state.last;
   const win = $('.tl-window', tlEl);
-  win.style.top = `${i1 * rowH - 3}px`;
+  win.style.transform = `translateY(${(i1 * rowH - 3).toFixed(1)}px)`; // moved on the compositor, not by layout
   win.style.height = `${(i2 - i1 + 1) * rowH + 6}px`;
   const label = state.first === state.last ? `${state.first}` : `${state.first}–${state.last}`;
   $('.tl-here', tlEl).textContent = `Viewing ${label}`;

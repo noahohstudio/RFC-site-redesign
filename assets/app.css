@@ -379,6 +379,7 @@ body.legend-hidden .legend-link { display: flex; }
   border-bottom: 1px solid var(--color-border-subtle); color: var(--color-text-primary);
 }
 .row:hover { background: var(--color-bg-surface); }
+.list.is-scrolling { pointer-events: none; } /* no hover churn while the page moves */
 a.row:hover { box-shadow: inset 6px 0 0 var(--era-accent); }
 .row-num {
   width: var(--size-number-cell); flex: none; display: flex; align-items: center; justify-content: center;
@@ -442,7 +443,11 @@ a.row:hover { box-shadow: inset 6px 0 0 var(--era-accent); }
 .tl-row:hover .tl-bar { outline-color: var(--color-border-strong); }
 .tl-yl { position: absolute; left: 0; top: 50%; transform: translateY(-50%); font: 400 12px/16px var(--font-mono); color: var(--color-text-muted); pointer-events: none; }
 .tl-note { margin-left: 5px; font: 400 12px/16px var(--font-mono); color: var(--color-text-secondary); pointer-events: none; }
-.tl-window { position: absolute; left: 32px; right: 0; border: 1.5px solid var(--color-border-strong); pointer-events: none; transition: top 0.08s linear, height 0.08s linear; }
+.tl-window {
+  position: absolute; top: 0; left: 32px; right: 0; border: 1.5px solid var(--color-border-strong); pointer-events: none;
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard), height var(--motion-duration-fast) var(--motion-ease-standard);
+  will-change: transform;
+}
 .tl-here { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 0 4px; background: var(--color-bg-canvas); font: 400 12px/16px var(--font-mono); color: var(--color-text-primary); white-space: nowrap; }
 .tl-caption { margin-top: 16px; font: 400 12px/16px var(--font-sans); color: var(--color-text-muted); }
 .tl-now { display: none; font: 400 12px/16px var(--font-mono); color: var(--color-text-primary); text-align: center; margin-bottom: 8px; }
@@ -932,6 +937,35 @@ html.is-locked { overflow: hidden; }
 .dlg-full[open] { animation: motion-fade var(--motion-duration-base) var(--motion-ease-enter); }
 @media (max-width: 767px) {
   .dlg-side[open], .dlg-center[open] { animation-name: motion-rise; }
+}
+
+/* arrivals: a page, an RFC and each era room settle in once — opacity and transform only */
+@keyframes arrive { from { opacity: 0; transform: translateY(8px); } }
+@keyframes arrive-fade { from { opacity: 0; } }
+#view-index:not([hidden]) { animation: arrive-fade var(--motion-duration-base) var(--motion-ease-enter); }
+#view-index:not([hidden]) .welcome > *, #view-index:not([hidden]) .legend, #view-index:not([hidden]) .chips-row {
+  animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) both;
+}
+#view-index:not([hidden]) .welcome > :nth-child(2) { animation-delay: 40ms; }
+#view-index:not([hidden]) .welcome > :nth-child(n+3) { animation-delay: 80ms; }
+#view-index:not([hidden]) .legend, #view-index:not([hidden]) .chips-row { animation-delay: 120ms; }
+.yr.arrive { animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) 160ms both; }
+.doc-main > .crumbs, .doc-head, .doc-notices, .note, .sheet { animation: arrive var(--motion-duration-slow) var(--motion-ease-enter) both; }
+.doc-head { animation-delay: 30ms; }
+.doc-notices { animation-delay: 60ms; }
+.note { animation-delay: 90ms; }
+.sheet { animation-delay: 120ms; }
+.doc-shell > .rail { animation: arrive-fade var(--motion-duration-slow) var(--motion-ease-enter) 150ms both; }
+.pt { animation: arrive-fade var(--motion-duration-base) var(--motion-ease-enter); } /* the text, as it arrives from rfc-editor.org */
+/* an era room: its words rise and its bars grow the first time it comes into view */
+.era-div-body > *, .era-div-axis { transition: opacity var(--motion-duration-slow) var(--motion-ease-enter), transform var(--motion-duration-slow) var(--motion-ease-enter); }
+.era-div-body > :nth-child(2) { transition-delay: 40ms; }
+.era-div-body > :nth-child(3) { transition-delay: 80ms; }
+.era-div-body > :nth-child(4), .era-div-axis { transition-delay: 120ms; }
+.era-div-bars i { transform-origin: bottom; transition: transform 480ms var(--motion-ease-enter) calc(80ms + var(--i, 0) * 14ms); }
+@media (prefers-reduced-motion: no-preference) {
+  .eras-arrive .era-div:not(.is-in) .era-div-body > *, .eras-arrive .era-div:not(.is-in) .era-div-axis { opacity: 0; transform: translateY(8px); }
+  .eras-arrive .era-div:not(.is-in) .era-div-bars i { transform: scaleY(0); }
 }
 
 /* light ↔ dark: every transition pauses and the whole page crossfades once */
