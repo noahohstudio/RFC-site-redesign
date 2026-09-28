@@ -5,7 +5,7 @@ import {
   rfcUrl, formats, hasTxt, lineage, currentVersions, primaryCurrent, replacementStory, related, relatedQuestion,
   citation, numList, plural, noteFor, factsLine,
 } from './data.js';
-import { $, $$, icon, mqPhone, navHeight, store, toast } from './ui.js';
+import { $, $$, icon, mqPhone, navHeight, store, toast, edgeFade } from './ui.js';
 
 const texts = new Map();
 let cur = null; // { rec, heads, ctrl }
@@ -34,7 +34,9 @@ export function init() {
   tocPanel.hidden = true;
   tocPanel.setAttribute('role', 'navigation');
   tocPanel.setAttribute('aria-label', 'Contents');
+  tocPanel.innerHTML = '<div class="toc-list"></div>'; // the list scrolls, and keeps its place between updates
   document.body.append(tocPanel);
+  edgeFade(tocPanel.firstElementChild);
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', () => { measureHeads(); onScroll(); }, { passive: true });
   document.addEventListener('click', onClick);
@@ -71,6 +73,8 @@ export function show(n, section) {
   cur = { rec, heads: [], ctrl: new AbortController(), pendingSection: section };
   document.title = `RFC ${rec.n}: ${rec.title} — RFC Editor (redesign concept)`;
   viewEl.innerHTML = pageHTML(rec);
+  edgeFade($('.toc', viewEl));
+  edgeFade($('#sheet-body', viewEl), 'x');
   renderBar(rec);
   setFit(true);
   headerIO = new IntersectionObserver(([en]) => {
@@ -297,7 +301,7 @@ function renderToc(currentId) {
   if (!cur) return;
   const list = $('#toc-list', viewEl);
   if (list) list.innerHTML = tocHTML(cur.heads, currentId);
-  if (!tocPanel.hidden) tocPanel.innerHTML = `<div class="toc-list">${tocHTML(cur.heads, currentId)}</div>`;
+  if (!tocPanel.hidden) tocPanel.firstElementChild.innerHTML = tocHTML(cur.heads, currentId);
   cur.currentId = currentId;
   // keep the section being read visible inside the (scrollable) contents rail
   const box = $('.toc', viewEl);
@@ -313,7 +317,7 @@ function renderToc(currentId) {
 function toggleToc() {
   const btn = $('.docbar-act', barEl);
   if (!tocPanel.hidden) { closeToc(); return; }
-  tocPanel.innerHTML = `<div class="toc-list">${cur ? tocHTML(cur.heads, cur.currentId) : ''}</div>`;
+  tocPanel.firstElementChild.innerHTML = cur ? tocHTML(cur.heads, cur.currentId) : '';
   tocPanel.hidden = false;
   btn?.setAttribute('aria-expanded', 'true');
   $('[aria-current="true"]', tocPanel)?.scrollIntoView({ block: 'center' });

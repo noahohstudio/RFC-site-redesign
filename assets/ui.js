@@ -6,6 +6,27 @@ import { db, ERAS, KINDS, STATUS, fmtInt, esc } from './data.js';
 export const $ = (sel, el = document) => el.querySelector(sel);
 export const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
 export const icon = (name, cls = '') => `<svg class="icon ${cls}" data-i="${name}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+// Soft edge fades on anything that scrolls or clips: whichever edge has more behind it
+// fades out, so it's clear there's more. A mask, not an overlay, so it suits any background.
+export function edgeFade(el, axis = 'y') {
+  if (!el || el.dataset.edgeFade) return;
+  el.dataset.edgeFade = axis;
+  el.classList.add('edge-fade', axis === 'x' ? 'edge-x' : 'edge-y');
+  const update = () => {
+    const pos = axis === 'x' ? el.scrollLeft : el.scrollTop;
+    const more = axis === 'x' ? el.scrollWidth - el.clientWidth - pos : el.scrollHeight - el.clientHeight - pos;
+    el.classList.toggle('fade-start', pos > 2);
+    el.classList.toggle('fade-end', more > 2);
+  };
+  // the box resizing and what's inside it changing size (a list growing, text switching size) both count
+  const ro = new ResizeObserver(update);
+  const watch = () => { ro.observe(el); for (const c of el.children) ro.observe(c); };
+  el.addEventListener('scroll', update, { passive: true });
+  new MutationObserver(() => { watch(); update(); }).observe(el, { childList: true, subtree: true });
+  watch();
+  update();
+}
+
 export const mqPhone = matchMedia('(max-width: 767px)');
 export const mqTablet = matchMedia('(max-width: 1023px)');
 export const navHeight = () => (mqPhone.matches ? 56 : 64);
@@ -81,6 +102,7 @@ export function showUpdate() {
 // ── Dialogs ───────────────────────────────────────────────────────────
 export function initDialogs() {
   $$('dialog.sheet-dlg').forEach((d) => {
+    d.querySelectorAll('.dlg-body, .msearch-body').forEach((b) => edgeFade(b));
     d.addEventListener('close', () => {
       if (!$$('dialog[open]').length) root.classList.remove('is-locked');
       d.dispatchEvent(new CustomEvent('sheet-closed'));
@@ -112,6 +134,7 @@ let leaveTimer = 0;
 
 export function initMenus() {
   $('#megas').innerHTML = MENUS.map(megaHTML).join('');
+  $$('.mega-scroll').forEach((s) => edgeFade(s));
   const triggers = $$('.nav-trigger');
   const scrim = $('#scrim');
   triggers.forEach((t) => {
@@ -187,7 +210,7 @@ function asideHTML(a) {
 }
 
 function megaHTML(m) {
-  return `<div class="mega" id="mega-${m.key}" role="region" aria-label="${m.label}" hidden>
+  return `<div class="mega" id="mega-${m.key}" role="region" aria-label="${m.label}" hidden><div class="mega-scroll">
     <div class="mega-inner">
       <div class="mega-intro">
         <p class="t-overline">${esc(m.intro.overline)}</p>
@@ -198,7 +221,7 @@ function megaHTML(m) {
       ${m.cols.map((col) => `<div class="mega-col">${col.map((g) => `<p class="t-overline">${esc(g.label)}</p>${g.items.map((it) => itemHTML(it)).join('')}`).join('')}</div>`).join('')}
       ${asideHTML(m.aside)}
     </div>
-  </div>`;
+  </div></div>`;
 }
 
 // ── Menu sheet (tablet + phone) ───────────────────────────────────────

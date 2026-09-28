@@ -2,7 +2,7 @@
 // overlay on phones. Keyboard-first: ⌘K or / from anywhere, ↑↓ to move, ↵ to open.
 import { db, ERA_BY_KEY, STATUS, esc, fmtInt } from './data.js';
 import { search } from './search.js';
-import { $, $$, icon, mqPhone, store, openDialog, closeDialog, closeMenus } from './ui.js';
+import { $, $$, icon, mqPhone, store, openDialog, closeDialog, closeMenus, edgeFade } from './ui.js';
 
 const START = [
   { n: 1, meta: 'The very first RFC · 1969' },
@@ -15,7 +15,9 @@ let mobile;
 let optSeq = 0;
 
 export function init() {
-  desk = controller($('#search-input'), $('#search-pop'), { phone: false });
+  // the dropdown's list scrolls inside it, so the edge fade leaves the dropdown's shadow alone
+  desk = controller($('#search-input'), $('#search-pop .pop-scroll'), { phone: false });
+  edgeFade(desk.container);
   mobile = controller($('#msearch-input'), $('#msearch-pop'), { phone: true });
 
   const root = $('#search');

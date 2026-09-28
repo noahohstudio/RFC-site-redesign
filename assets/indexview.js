@@ -4,7 +4,7 @@ import {
   db, ERAS, ERA_BY_KEY, KINDS, STATUS, STREAMS, fmtInt, esc, monthYear, monthYearShort,
   authorsShort, statusLabel, glyphClass, relationLine,
 } from './data.js';
-import { $, $$, icon, mqPhone, navHeight, store, openDialog } from './ui.js';
+import { $, $$, icon, mqPhone, navHeight, store, openDialog, edgeFade } from './ui.js';
 import { search } from './search.js';
 
 const KIND_PLURAL = {
@@ -698,6 +698,7 @@ function renderChips() {
     <button class="chip chip-filter" type="button" data-action="filters">${icon('filter')}Filters<span class="badge">${off ? `· ${off} off` : ''}</span></button>
     ${ERAS.map((e) => `<button class="chip" type="button" data-era="${e.key}" data-jump-era="${e.key}"${e.key === cur ? ' aria-current="true"' : ''}><span class="era-dot" aria-hidden="true"></span>${e.name}<span class="count">${fmtInt(db.eraCount.get(e.key) || 0)}</span></button>`).join('')}
   </div>`;
+  edgeFade($('.chips', chipsEl), 'x');
 }
 
 function updateFilterBadges() {
