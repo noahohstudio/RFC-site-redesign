@@ -6,6 +6,7 @@ import {
 } from './data.js';
 import { $, $$, icon, mqPhone, navHeight, store, openDialog, edgeFade } from './ui.js';
 import { search } from './search.js';
+import { createTimeline } from './timeline.js';
 
 const KIND_PLURAL = {
   I: 'Internet Standards', D: 'Draft Standards', P: 'Proposed Standards', B: 'Best Current Practices',
@@ -792,30 +793,12 @@ function updateCurrent(force) {
   $('.scrub-year', scrubEl).textContent = first;
 }
 
-// ── Timeline (right rail) ─────────────────────────────────────────────
+// ── Timeline (right rail): a dot for every 20 RFCs, year by year ─────
 const TL_YEARS = () => { const out = []; for (let y = db.maxYear; y >= db.minYear; y--) out.push(y); return out; };
+let tl = null;
 
 function renderTimeline() {
-  const years = TL_YEARS();
-  const early = years.filter((y) => y < 1983).reduce((a, y) => ((db.yearCount.get(y) || 0) > (db.yearCount.get(a) || 0) ? y : a), years[years.length - 1]);
-  const peak = years.reduce((a, y) => ((db.yearCount.get(y) || 0) > (db.yearCount.get(a) || 0) ? y : a), years[0]);
-  const ticks = [0, 100, 200, 300, 400];
-  tlEl.innerHTML = `
-    <div class="tl-head"><p class="t-overline">RFCs per year</p><p>${db.minYear} → ${db.maxYear} · ${fmtInt(db.list.length)}</p></div>
-    <div class="tl-axis" aria-hidden="true">${ticks.map((v) => `<span style="left:calc(37px + ${v} * var(--scale))">${v}</span>`).join('')}</div>
-    <p class="tl-now" aria-hidden="true"></p>
-    <div class="tl-plot" style="--years:${years.length}">
-      ${ticks.map((v) => `<i class="tl-grid${v === 0 ? ' is-zero' : ''}" style="left:calc(36px + ${v} * var(--scale))" aria-hidden="true"></i>`).join('')}
-      ${years.map((y) => {
-        const total = db.yearCount.get(y) || 0;
-        const era = db.years.find((x) => x.year === y)?.era || 'arpanet';
-        const note = y === peak || y === early ? `<span class="tl-note">${total}</span>` : '';
-        return `<div class="tl-row" data-year="${y}" data-era="${era}" style="--total:${total};--shown:${total}">${y % 10 === 0 ? `<span class="tl-yl">${y}</span>` : ''}<span class="tl-bar"><i></i></span>${note}</div>`;
-      }).join('')}
-      <div class="tl-window"><span class="tl-here"></span></div>
-      <div class="tl-tip" hidden></div>
-    </div>
-    <p class="tl-caption">Bar length = RFCs that year. Click or drag to travel.</p>`;
+  tl = createTimeline(tlEl);
   tlEl.setAttribute('role', 'slider');
   tlEl.setAttribute('tabindex', '0');
   tlEl.setAttribute('aria-label', 'Timeline — RFCs per year. Use arrow keys to walk through time.');
@@ -826,47 +809,28 @@ function renderTimeline() {
 }
 
 function layoutTimeline() {
-  if (!tlEl || !tlEl.firstElementChild) return;
-  const w = tlEl.clientWidth;
-  const compact = w < 150;
-  tlEl.classList.toggle('tl--compact', compact);
-  const scale = compact ? (w - 8) / db.maxYearCount : (w - 37 - 36) / db.maxYearCount;
-  tlEl.style.setProperty('--scale', `${Math.max(0.02, scale).toFixed(4)}px`);
+  if (!tl) return;
+  tl.render();
   positionWindow();
 }
 
 function updateTimelineCounts() {
   const shown = new Map();
   for (const s of state.sections) shown.set(s.year, s.recs.length);
-  $$('.tl-row', tlEl).forEach((row) => row.style.setProperty('--shown', shown.get(Number(row.dataset.year)) || 0));
+  tl?.counts(shown);
 }
 
 function positionWindow() {
-  if (!state.first || !tlEl.firstElementChild) return;
-  const plot = $('.tl-plot', tlEl);
-  const n = db.maxYear - db.minYear + 1;
-  const rowH = plot.clientHeight / n;
-  const i1 = db.maxYear - state.first;
-  const i2 = db.maxYear - state.last;
-  const win = $('.tl-window', tlEl);
-  win.style.transform = `translateY(${(i1 * rowH - 3).toFixed(1)}px)`; // moved on the compositor, not by layout
-  win.style.height = `${(i2 - i1 + 1) * rowH + 6}px`;
+  if (!state.first || !tl) return;
+  tl.place(state.first, state.last);
   const label = state.first === state.last ? `${state.first}` : `${state.first}–${state.last}`;
-  $('.tl-here', tlEl).textContent = `Viewing ${label}`;
   $('.tl-now', tlEl).textContent = label;
   tlEl.setAttribute('aria-valuenow', String(state.first));
   tlEl.setAttribute('aria-valuetext', `Viewing ${label}`);
 }
 
-function yearFromY(plot, clientY) {
-  const r = plot.getBoundingClientRect();
-  const n = db.maxYear - db.minYear + 1;
-  const i = Math.min(n - 1, Math.max(0, Math.floor(((clientY - r.top) / r.height) * n)));
-  return db.maxYear - i;
-}
-
 function wireTimeline() {
-  const plot = $('.tl-plot', tlEl);
+  const plot = tl.plot;
   const tip = $('.tl-tip', tlEl);
   let dragging = false;
   let pending = null;
@@ -877,33 +841,30 @@ function wireTimeline() {
     raf = requestAnimationFrame(() => { raf = 0; jumpToYear(pending, { flash: false }); });
   };
   const showTip = (e) => {
-    const y = yearFromY(plot, e.clientY);
+    const y = tl.yearAt(e.clientY);
     const total = db.yearCount.get(y) || 0;
     const shown = state.sections.find((s) => s.year === y)?.recs.length || 0;
     tip.textContent = `${y} · ${shown !== total ? `${fmtInt(shown)} of ` : ''}${fmtInt(total)} RFC${total === 1 ? '' : 's'}`;
-    const r = plot.getBoundingClientRect();
-    const row = $(`.tl-row[data-year="${y}"]`, plot);
-    const bar = row && $('.tl-bar', row);
-    tip.style.top = `${e.clientY - r.top}px`;
-    if (!tlEl.classList.contains('tl--compact') && bar) tip.style.left = `${Math.min(bar.offsetLeft + bar.offsetWidth + 10, plot.clientWidth - 90)}px`;
-    else tip.style.left = '';
+    tip.style.top = `${e.clientY - plot.getBoundingClientRect().top}px`;
+    tip.style.left = tlEl.classList.contains('tl--compact') ? '' : `${tl.tipX(y)}px`;
     tip.hidden = false;
+    tl.hoverYear(y);
   };
   plot.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     dragging = true;
     plot.setPointerCapture(e.pointerId);
-    go(yearFromY(plot, e.clientY));
+    go(tl.yearAt(e.clientY));
     showTip(e);
   });
   plot.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'mouse' || dragging) showTip(e);
-    if (dragging) go(yearFromY(plot, e.clientY));
+    if (dragging) go(tl.yearAt(e.clientY));
   });
   const end = () => { dragging = false; };
   plot.addEventListener('pointerup', end);
   plot.addEventListener('pointercancel', end);
-  plot.addEventListener('pointerleave', () => { if (!dragging) tip.hidden = true; });
+  plot.addEventListener('pointerleave', () => { if (!dragging) { tip.hidden = true; tl.hoverYear(null); } });
   tlEl.addEventListener('keydown', (e) => {
     const cur = state.first || db.maxYear;
     const map = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 10, PageDown: -10 };

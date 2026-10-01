@@ -63,7 +63,7 @@ python3 tools/build-assets.py              # only if icons or status glyphs chan
 | Ask Crock | The archivist, named for Steve Crocker, who wrote RFC 1. Its pointers are built only from relations recorded in the index: what replaced an RFC, what updates it, what was published alongside it (same working group and month), and its STD/BCP siblings. It shows up on RFC pages, and in search as questions the index can answer (“What replaced RFC 2616?”) |
 | Crock’s notes | For 62 well-known RFCs, a short plain-language note above the sheet: why it was written and where it made a difference (`data/notes.json`). The notes are drafts written with AI assistance for this prototype, labelled as such, and need an editor’s review. Every other RFC gets a friendly line built from the index in the Crock panel |
 | Lineage | Obsoletes / obsoleted-by chains (e.g. 2068 → 2616 → 7231 → 9110) |
-| Timeline | Real per-year counts (1968–2026, peak 459 in 2006); under filters it shows matching vs. total |
+| Timeline | “Year by year”: a dot for every 20 RFCs, from real per-year counts (1968–2026, peak 459 in 2006); dots a filter hides go faint |
 
 Links in the Learn, Contribute and About menus go to the real pages on rfc-editor.org and ietf.org, or to RFCs inside the prototype
 (RFC 1, 2119, 7322, 9920).
@@ -97,6 +97,7 @@ assets/data.js      index model, formatting, lineage, related list, citations
 assets/search.js    ranking
 assets/searchui.js  dropdown (≥768) and full-screen search (phones)
 assets/indexview.js the landing index, filters, timeline, era scrubber
+assets/timeline.js  the right-rail timeline (dots, year by year)
 assets/docview.js   RFC pages
 assets/ui.js        theme, menus, sheets, toasts
 tools/              data + asset build scripts
