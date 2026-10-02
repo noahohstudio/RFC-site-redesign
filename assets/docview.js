@@ -85,6 +85,8 @@ export function show(n, section) {
   }, { rootMargin: `-${navHeight()}px 0px 0px 0px` });
   headerIO.observe($('#doc-head', viewEl));
   remember(rec.n);
+  const lens = $('#search');
+  if (lens) lens.dataset.era = rec.era;
   loadText(rec);
 }
 
@@ -106,11 +108,10 @@ export function closeToc() {
 // ── Page ──────────────────────────────────────────────────────────────
 function pageHTML(r) {
   const era = ERA_BY_KEY[r.era];
-  const ids = r.also.map((id) => `<span class="docid">${prettyId(id)}</span>`).join('');
   return `
   <div class="shell doc-shell" data-era="${r.era}">
     <aside class="rail toc-rail" aria-label="On this page">
-      <div class="toc"><p class="t-overline toc-label">On this page</p><div class="toc-list" id="toc-list"><p class="toc-empty">Reading the contents…</p></div></div>
+      <div class="toc"><p class="t-label toc-label">On this page</p><div class="toc-list" id="toc-list"><p class="toc-empty">Reading the contents…</p></div></div>
     </aside>
 
     <article class="center doc-main" aria-labelledby="doc-title">
@@ -121,19 +122,21 @@ function pageHTML(r) {
         <span class="here" aria-current="page">RFC ${r.n}</span>
       </nav>
       <header class="doc-head" id="doc-head">
-        <div class="identity">
-          <span class="era-tag">${era.name} <small>${era.years}</small></span>
-          <span class="status ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i>${statusLabel(r)}</span>
-          ${ids}
+        <div class="doc-id">
+          <span class="doc-id-cap">RFC</span>
+          <span class="doc-num">${r.n}</span>
+          <a class="doc-era" href="#/era/${r.era}"><span class="era-dot" aria-hidden="true"></span>${era.name}<small>${era.years}</small></a>
         </div>
-        <h1 class="doc-title" id="doc-title" tabindex="-1">${esc(r.title)}</h1>
-        <p class="byline">RFC ${r.n} · ${monthYear(r)}${r.authors.length ? ` · ${esc(authorsFull(r))}` : ''}</p>
+        <div class="doc-head-main">
+          <div class="doc-title-cell"><h1 class="doc-title" id="doc-title" tabindex="-1">${esc(r.title)}</h1></div>
+          <dl class="doc-facts">${factsHTML(r)}</dl>
+        </div>
       </header>
       ${noticesHTML(r)}
       ${noteHTML(r)}
       <section class="sheet" id="sheet" aria-label="RFC ${r.n}, exactly as published">
         <div class="sheet-bar">
-          <div class="sheet-prov">${icon('lock')}<span class="sheet-file">rfc${r.n}.txt</span><span class="t-overline">Canonical · unmodified</span></div>
+          <div class="sheet-prov">${icon('lock')}<span class="sheet-file">rfc${r.n}.txt</span><span class="t-overline">Canonical, unmodified</span></div>
           <div class="sheet-tools">
             ${formats(r).map((f) => (f.ext === 'txt'
               ? `<span class="fmt" aria-current="true">TXT</span>`
@@ -155,12 +158,31 @@ function pageHTML(r) {
   </div>`;
 }
 
+// Every fact in a fixed, labelled cell, so readers learn once where to look.
+function factsHTML(r) {
+  const ids = r.also.map((id) => `<span class="docid">${prettyId(id)}</span>`).join('');
+  const pub = r.pubStatus !== r.status ? `<br><span class="muted">Published as ${STATUS[r.pubStatus].label}</span>` : '';
+  const facts = [
+    ['Status', `<span class="status ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i>${STATUS[r.status].label}${r.obsolete ? ', replaced' : ''}</span>${ids}${pub}`],
+    ['Published', monthYear(r)],
+    ['Stream', `${r.stream}${r.wg ? ` · ${esc(r.wg)}` : ''}`],
+    ['Authors', r.authors.length ? esc(authorsFull(r)) : 'Not recorded', true],
+    ['Length', r.pages ? `${r.pages} pages` : 'Not recorded'],
+  ];
+  if (r.obsoletedBy.length) facts.push(['Replaced by', relLinks(r.obsoletedBy)]);
+  if (r.obsoletes.length) facts.push(['Replaces', relLinks(r.obsoletes)]);
+  if (r.updatedBy.length) facts.push(['Updated by', relLinks(r.updatedBy)]);
+  if (r.updates.length) facts.push(['Updates', relLinks(r.updates)]);
+  facts.push(['DOI', doi(r)]);
+  return facts.map(([k, v, wide]) => `<div class="fact${wide ? ' fact-wide' : ''}"><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+}
+
 function noticesHTML(r) {
   const out = [];
   if (r.obsolete) {
     const primary = primaryCurrent(r) || currentVersions(r)[0];
     out.push(`<div class="callout">${icon('history')}<div class="callout-text"><p class="callout-title">This RFC has been replaced</p><p class="callout-body">${esc(replacementStory(r))} It’s kept here exactly as it was published.</p></div></div>`);
-    if (primary) out.push(`<a class="btn btn-secondary" href="#/rfc/${primary.n}">Go to RFC ${primary.n} — the current version${icon('arrow-right')}</a>`);
+    if (primary) out.push(`<a class="btn btn-primary" href="#/rfc/${primary.n}">Go to RFC ${primary.n}, the current version${icon('arrow-right')}</a>`);
   } else if (r.updatedBy.length) {
     const ups = r.updatedBy.map((n) => db.byN.get(n)).filter(Boolean);
     const links = ups.slice(0, 6).map((u) => `<a href="#/rfc/${u.n}">RFC ${u.n}</a> (${u.year})`).join(', ');
@@ -176,7 +198,7 @@ function noteHTML(r) {
   if (!n) return '';
   return `
       <section class="note" aria-labelledby="note-h">
-        <div class="note-label">${icon('compass')}<span class="t-overline">Crock’s note</span><span class="note-tag">Draft</span></div>
+        <div class="note-label">${icon('compass')}<span class="t-label">Crock’s note</span><span class="note-tag">Draft</span></div>
         <h2 class="note-q" id="note-h">Why RFC ${r.n} matters</h2>
         <p class="note-p">${esc(n.why)}</p>
         <p class="note-p">${esc(n.where)}</p>
@@ -188,24 +210,49 @@ function relLinks(nums) {
   return [...nums].sort((a, b) => a - b).map((n) => `<a href="#/rfc/${n}">${n}</a>`).join(', ');
 }
 
+function ageLabel(r) {
+  const now = new Date();
+  const months = (now.getFullYear() - r.year) * 12 + (now.getMonth() + 1 - r.month);
+  if (months < 1) return 'New this month';
+  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'}`;
+  const y = Math.floor(months / 12);
+  return `${y} ${y === 1 ? 'year' : 'years'}`;
+}
+
+function standingLabel(r) {
+  if (r.obsolete) return `Replaced, ${Math.min(...r.obsoletedBy.map((n) => db.byN.get(n)?.year || 9999))}`;
+  if (r.updatedBy.length) return r.updatedBy.length === 1 ? 'Updated once' : `Updated ${r.updatedBy.length}×`;
+  return 'Current';
+}
+
+const pointerHTML = (p) => `
+        <a class="pointer" href="#/rfc/${p.rec.n}" data-era="${p.rec.era}">
+          <span class="pointer-num"><span class="era-dot" aria-hidden="true"></span>${p.rec.n}</span>
+          <span class="pointer-body"><span class="pointer-t">${esc(p.rec.title)}</span><span class="pointer-why">${esc(p.why)}</span></span>
+          <span class="pointer-trail ${glyphClass(p.rec)}"><i class="glyph" role="img" aria-label="${statusLabel(p.rec)}"></i></span>
+        </a>`;
+
 function aboutHTML(r) {
-  const also = r.also.map(prettyId);
-  const status = `${STATUS[r.status].label}${also.length ? ` · ${also.join(', ')}` : ''}${r.obsolete ? ' · replaced' : ''}`;
-  const pub = r.pubStatus !== r.status ? `<br><span class="muted">Published as ${STATUS[r.pubStatus].label}</span>` : '';
-  const rows = [
-    ['Status', `${status}${pub}`, false],
-    ['Published', `${monthYear(r)} · ${r.stream}${r.wg ? ` (${esc(r.wg)})` : ''}${r.pages ? ` · ${r.pages} pages` : ''}`, false],
-  ];
-  if (r.obsoletedBy.length) rows.push(['Obsoleted by', relLinks(r.obsoletedBy), true]);
-  if (r.obsoletes.length) rows.push(['Obsoletes', relLinks(r.obsoletes), true]);
-  if (r.updatedBy.length) rows.push(['Updated by', relLinks(r.updatedBy), true]);
-  if (r.updates.length) rows.push(['Updates', relLinks(r.updates), true]);
-  rows.push(['DOI', doi(r), true]);
+  const rel = related(r);
+  // Crock says more than where to go next: what the RFC is in plain words, and where it stands
+  const crock = `
+    <section class="crock" aria-labelledby="crock-h">
+      <div class="crock-head">${icon('compass')}<h2 id="crock-h">Ask Crock</h2>${noteFor(r) ? '<span class="note-tag">Draft note above</span>' : ''}</div>
+      <div class="crock-short"><p class="crock-k">In short</p><p>${esc(factsLine(r))}</p></div>
+      <div class="crock-glance">
+        <div><span class="crock-k">Age</span><b>${ageLabel(r)}</b></div>
+        <div><span class="crock-k">Standing</span><b>${standingLabel(r)}</b></div>
+        <div><span class="crock-k">Length</span><b>${r.pages ? `${r.pages} pages` : '—'}</b></div>
+      </div>
+      <p class="crock-q" id="rel-q">${relatedQuestion(r)}</p>
+      ${rel.length ? rel.map(pointerHTML).join('') : '<p class="crock-empty">Nothing in the index points to or from this RFC. It stands on its own.</p>'}
+      <p class="crock-foot">Crock only points where the index does: what replaced, updates or sits alongside this RFC. Named for Steve Crocker, who wrote <a href="#/rfc/1">RFC 1</a> in 1969.</p>
+    </section>`;
 
   const line = lineage(r);
   const lineageHTML = line.length > 1 ? `
     <section class="about-block" aria-labelledby="lin-h">
-      <h2 class="t-overline" id="lin-h">Lineage</h2>
+      <h2 class="t-label" id="lin-h">Lineage</h2>
       <div class="lineage">${line.map((s, i) => lineageStep(s, s === r, i === line.length - 1)).join('')}</div>
     </section>` : '';
 
@@ -220,32 +267,7 @@ function aboutHTML(r) {
       <div class="action-drop" id="dl-${r.n}" hidden>${fmts.map((f) => `<a class="btn btn-outline btn-sm" href="${rfcUrl(r, f.ext)}" target="_blank" rel="noopener">${f.label}${icon('arrow-up-right')}</a>`).join('')}</div>
     </section>`;
 
-  const rel = related(r);
-  const count = rel.length ? `<span class="t-mono-s muted">· ${rel.length} ${rel.length === 1 ? 'pointer' : 'pointers'}</span>` : '';
-  const relatedHTML = `
-    <section class="related" aria-labelledby="rel-q">
-      <div class="related-head">
-        <div class="related-label">${icon('compass')}<span class="t-overline">Ask Crock</span>${count}</div>
-        ${noteFor(r) ? '' : `<p class="related-lede">${esc(factsLine(r))}</p>`}
-        <p class="related-q" id="rel-q">${relatedQuestion(r)}</p>
-      </div>
-      ${rel.length ? rel.map((p) => `
-        <a class="pointer" href="#/rfc/${p.rec.n}" data-era="${p.rec.era}">
-          <span class="pointer-body"><span class="pointer-id"><span class="n">${p.rec.n}</span><span class="t">${esc(p.rec.title)}</span></span><span class="pointer-why">${esc(p.why)}</span></span>
-          <span class="pointer-trail ${glyphClass(p.rec)}"><i class="glyph" role="img" aria-label="${statusLabel(p.rec)}"></i>${icon('arrow-right')}</span>
-        </a>`).join('') : '<p class="related-empty">Nothing in the index points to or from this RFC — it stands on its own.</p>'}
-      <p class="related-foot">Pointers come only from what the index records — what replaced, updates or sits alongside this RFC. Named for Steve Crocker, who wrote <a href="#/rfc/1">RFC 1</a> in 1969.</p>
-    </section>`;
-
-  return `<div class="about">
-    <section class="about-block" aria-labelledby="facts-h">
-      <h2 class="t-overline" id="facts-h">About this RFC</h2>
-      ${rows.map(([k, v, mono]) => `<div class="meta-row"><span class="t-overline">${k}</span><span class="v${mono ? ' mono' : ''}">${v}</span></div>`).join('')}
-    </section>
-    ${lineageHTML}
-    ${actions}
-    ${relatedHTML}
-  </div>`;
+  return `<div class="about">${crock}${lineageHTML}${actions}</div>`;
 }
 
 function lineageStep(s, here, last) {
@@ -279,8 +301,8 @@ function renderBar(r) {
   barEl.classList.remove('is-on');
   barEl.innerHTML = `
     <div class="docbar-cur" data-era="${r.era}">
-      <span class="docbar-num">${r.n}</span>
-      <span class="docbar-body"><span class="docbar-over">${STATUS[r.status].label}${also.length ? ` · ${also.join(' · ')}` : ''}${r.obsolete ? ' · Replaced' : ''} · ${ERA_BY_KEY[r.era].name} era</span><span class="docbar-title">${esc(r.title)}</span></span>
+      <span class="docbar-num">${r.n}<span class="era-dot" aria-hidden="true"></span></span>
+      <span class="docbar-body"><span class="docbar-over">${STATUS[r.status].label}${also.length ? ` · ${also.join(' · ')}` : ''}${r.obsolete ? ' · replaced' : ''} · ${ERA_BY_KEY[r.era].name} era</span><span class="docbar-title">${esc(r.title)}</span></span>
       <span class="${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i></span>
     </div>
     <button class="docbar-act" type="button" aria-expanded="false" aria-controls="tocpanel" data-action="toc"><span>Contents</span>${icon('chevron-down')}</button>`;

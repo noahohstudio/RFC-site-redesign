@@ -46,7 +46,11 @@
   --radius-none: 0px; --radius-xs: 2px; --radius-sm: 4px; --radius-full: 999px;
   --stroke-hairline: 1px; --stroke-focus: 2px;
   --size-dot: 8px; --size-icon-sm: 16px; --size-icon: 24px; --size-touch-min: 44px; --size-control: 48px;
-  --size-header: 56px; --size-row: 64px; --size-number-cell: 88px;
+  --size-header: 56px; --size-row: 64px; --size-number-cell: 96px;
+  --size-cell: 56px;      /* the row module: every shelf row and rail cell snaps to it */
+  --size-rail: 280px;     /* the left rail column, and the logo cell above it */
+  --size-map: 64px;       /* the minimap column, and the theme cell above it */
+  --size-frame: 1440px;   /* the hairline frame header and page share */
   --measure-prose: 680px; --measure-plaintext: 605px;
 
   /* ── Typography ────────────────────────────────────────────────── */
@@ -57,6 +61,10 @@
   /* ── Effects ───────────────────────────────────────────────────── */
   --effect-overlay: 0 1px 2px rgb(19 21 20 / 0.06), 0 12px 32px -4px rgb(19 21 20 / 0.10);
   --effect-sheet: 0 1px 2px rgb(26 25 21 / 0.05), 0 10px 28px -6px rgb(26 25 21 / 0.07);
+  /* lift: the page itself is flat; only what floats lifts, and the higher it sits the softer and wider its shadow */
+  --lift-1: 0 1px 2px rgb(26 25 21 / 0.05), 0 8px 20px -8px rgb(26 25 21 / 0.16);   /* attached: search results, contents */
+  --lift-2: 0 1px 2px rgb(26 25 21 / 0.06), 0 18px 40px -12px rgb(26 25 21 / 0.22);  /* menus */
+  --lift-3: 0 2px 4px rgb(26 25 21 / 0.08), 0 28px 64px -16px rgb(26 25 21 / 0.30);  /* dialogs and sheets */
   --scrim: rgb(26 25 21 / 0.22);
   --effect-edge-fade-size: 64px;  /* how far an edge fade reaches into a scrolling area */
   --effect-edge-fade-floor: 0.4;  /* what's left at the very edge: things dim, never vanish */
@@ -168,5 +176,8 @@
 
   --effect-overlay: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -4px rgb(0 0 0 / 0.5);
   --effect-sheet: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 28px -6px rgb(0 0 0 / 0.45);
+  --lift-1: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 20px -8px rgb(0 0 0 / 0.5);
+  --lift-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 40px -12px rgb(0 0 0 / 0.6);
+  --lift-3: 0 2px 4px rgb(0 0 0 / 0.45), 0 28px 64px -16px rgb(0 0 0 / 0.7);
   --scrim: rgb(0 0 0 / 0.5);
 }

@@ -1,6 +1,7 @@
-// The right-rail timeline, year by year: a dot for every 20 RFCs in the era's colour, newest
-// at the top like the list. The last dot in a row holds what's left over, so it's smaller.
-// A soft band in the era's colour marks where you are.
+// The minimap, year by year: equal dots in the era's colour, newest at the top like the list.
+// Every dot stands for the same number of RFCs (rounded; any year with RFCs gets at least one),
+// so there are no partial dots to decode. A soft band in the era's colour marks where you are;
+// hovering names the year and its count.
 import { db, ERAS } from './data.js';
 
 const LABEL_W = 34; // the year column
@@ -8,12 +9,6 @@ const NICE = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500];
 const nice = (v) => NICE.find((n) => n >= v) || Math.ceil(v / 100) * 100;
 const f1 = (v) => Math.round(v * 10) / 10; // one decimal keeps the SVG small
 const eraOf = (y) => (ERAS.find((e) => y >= e.from && y <= e.to) || ERAS[ERAS.length - 1]).key;
-
-// a small seeded random, so each dot sits a touch off the grid, the same way every time
-function rng(seed) {
-  let s = (Math.imul(seed, 2654435761) >>> 0) || 1;
-  return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
-}
 
 export function createTimeline(el) {
   const years = [];
@@ -52,24 +47,19 @@ export function createTimeline(el) {
     el.classList.toggle('tl--compact', compact);
     const rh = rowH();
     const x0 = compact ? 3 : LABEL_W;
-    const r = Math.max(1.1, Math.min(2.5, rh * 0.25));
-    const pitch = r * 2 + Math.max(1.4, Math.min(2.4, r * 0.9));
+    const r = compact ? Math.max(1.1, Math.min(2, rh * 0.2)) : Math.max(1.1, Math.min(2.5, rh * 0.25));
+    const pitch = r * 2 + (compact ? 1.2 : Math.max(1.4, Math.min(2.4, r * 0.9)));
     const unit = nice(db.maxYearCount / Math.max(1, Math.floor((W - x0 - 2) / pitch)));
     let out = '';
+    const dotsFor = (c) => (c ? Math.max(1, Math.round(c / unit)) : 0);
     years.forEach((yr, i) => {
-      const rand = rng(yr.year * 7 + 1);
       const s = shown ? (shown.get(yr.year) || 0) : yr.total;
-      const full = Math.floor(yr.total / unit);
-      const rem = yr.total % unit;
-      const n = full + (rem ? 1 : 0);
+      const n = dotsFor(yr.total);
+      const on = Math.min(n, dotsFor(s));
       const cy = (i + 0.5) * rh;
       let g = '';
       for (let k = 0; k < n; k++) {
-        const part = k < full ? 1 : Math.sqrt(rem / unit); // by area
-        const rr = Math.max(0.6, r * part * (0.9 + rand() * 0.2));
-        const x = x0 + r + k * pitch + (rand() - 0.5) * 0.8;
-        const y = cy + (rand() - 0.5) * Math.min(1.2, rh * 0.12);
-        g += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr)}"${k * unit >= s ? ' class="is-off"' : ''}/>`;
+        g += `<circle cx="${f1(x0 + r + k * pitch)}" cy="${f1(cy)}" r="${f1(r)}"${k >= on ? ' class="is-off"' : ''}/>`;
       }
       out += `<g data-era="${yr.era}">${g}</g>`;
       if (!compact && yr.year % 10 === 0) out += `<text class="tl-yl" data-row="${i}" x="0" y="${f1(cy)}" dy="0.35em">${yr.year}</text>`;
@@ -77,7 +67,7 @@ export function createTimeline(el) {
     });
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.innerHTML = out;
-    key.innerHTML = `<svg class="tl-key-dot" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="3"/></svg>${unit} RFCs; a smaller dot is part of ${unit}. Click or drag to travel.`;
+    key.innerHTML = `<svg class="tl-key-dot" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="3"/></svg>About ${unit} RFCs. Click or drag to travel.`;
     if (at) place(...at);
   }
 

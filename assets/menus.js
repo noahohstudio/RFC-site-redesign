@@ -32,7 +32,7 @@ export const MENUS = [
         ] },
       ],
     ],
-    aside: { type: 'eras', label: 'Jump to an era', note: 'Bars show how many RFCs each era published.' },
+    aside: { type: 'eras', label: 'Jump to an era', note: 'The count beside each era is how many RFCs it published.' },
   },
   {
     key: 'learn',

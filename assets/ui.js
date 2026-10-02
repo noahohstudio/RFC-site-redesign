@@ -190,10 +190,9 @@ function itemHTML(it, cls = 'nav-item') {
 }
 
 function eraJumpHTML() {
-  const max = Math.max(...ERAS.map((e) => db.eraCount.get(e.key) || 0));
   return `<div class="era-jump">${[...ERAS].reverse().map((e) => {
     const c = db.eraCount.get(e.key) || 0;
-    return `<a href="#/era/${e.key}" data-era="${e.key}"><span class="era-tag">${e.name} <small>${e.years}</small></span><i class="bar" style="width:${Math.max(4, Math.round((c / max) * 40))}px"></i><span class="num">${fmtInt(c)}</span></a>`;
+    return `<a href="#/era/${e.key}" data-era="${e.key}"><span class="era-dot" aria-hidden="true"></span><span class="era-tag">${e.name} <small>${e.years}</small></span><span class="num">${fmtInt(c)}</span></a>`;
   }).join('')}</div>`;
 }
 

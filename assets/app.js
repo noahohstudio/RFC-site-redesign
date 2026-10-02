@@ -147,6 +147,7 @@ function onClick(e) {
       case 'filters': index.openFilters(); break;
       case 'hide-legend': index.hideLegend(true); break;
       case 'reset-filters': index.resetFilters(); break;
+      case 'to-page-top': window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); break;
       case 'close': ui.closeDialog(t.closest('dialog')); break;
       default: break;
     }

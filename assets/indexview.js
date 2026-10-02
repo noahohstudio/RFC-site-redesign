@@ -33,7 +33,7 @@ let rafScroll = 0;
 export function renderSkeleton() {
   listEl = $('#list');
   const rows = Array.from({ length: 6 }, () => '<div class="row row-skel" aria-hidden="true"><span class="row-num"><i></i></span><span class="row-body"><i></i><i></i></span><span class="row-trail"><i></i></span></div>').join('');
-  listEl.innerHTML = `<section class="yr" data-era="present"><h2 class="yr-head"><span class="yr-left"><span class="era-dot"></span><span class="yr-num">…</span></span><span class="yr-rule"></span></h2>${rows}</section>`;
+  listEl.innerHTML = `<section class="yr" data-era="present"><h2 class="yr-head"><span class="era-dot"></span><span class="yr-num">…</span></h2>${rows}</section>`;
   listEl.setAttribute('aria-busy', 'true');
 }
 
@@ -312,7 +312,7 @@ function makeSection(y, recs) {
   el.dataset.era = y.era;
   el.id = `y${y.year}`;
   el.setAttribute('aria-labelledby', `yh${y.year}`);
-  el.innerHTML = `<h2 class="yr-head" id="yh${y.year}"><span class="yr-left"><span class="era-dot" aria-hidden="true"></span><span class="yr-num">${y.year}</span><span class="yr-era">${ERA_BY_KEY[y.era].name}</span></span><span class="yr-rule" aria-hidden="true"></span><span class="yr-count">${countLabel(y, recs.length)}</span></h2><div class="yr-rows"></div>`;
+  el.innerHTML = `<h2 class="yr-head" id="yh${y.year}"><span class="era-dot" aria-hidden="true"></span><span class="yr-num">${y.year}</span><span class="yr-era">${ERA_BY_KEY[y.era].name}</span><span class="yr-count">${countLabel(y, recs.length)}</span></h2><div class="yr-rows"></div>`;
   // h: each row's height (estimated until it has been on screen, then measured);
   // off: running totals, so off[k] is row k's top within the year; [from, to) is what's built
   const n = recs.length;
@@ -346,8 +346,6 @@ let geo = null;
 const heightCache = new Map(); // RFC number → row height
 let heightKey = '';
 const measureCtx = document.createElement('canvas').getContext('2d');
-const labelWidths = new Map();
-function textWidth(font, s) { measureCtx.font = font; return measureCtx.measureText(s).width; }
 // Wrap text the way the browser does — greedily, breaking at spaces and after hyphens —
 // so a row's line count is known exactly before the row exists. Word widths are cached.
 const wordCaches = new Map(); // font → (word → width)
@@ -400,15 +398,11 @@ function measureGeometry() {
   const cs = (el) => getComputedStyle(el);
   const fonts = { title: cs(title).font, meta: cs(meta).font, rel: cs(probe.lastElementChild).font, trail: cs(trail).font };
   const titleW = title.getBoundingClientRect().width;
-  const wide = state.mode === 'wide';
-  const ownLabel = wide ? textWidth(fonts.trail, statusLabel(plain)) : 0;
   const metaLH = parseFloat(cs(meta).lineHeight);
   const probeMetaLines = Math.max(1, Math.round(meta.getBoundingClientRect().height / metaLH));
   geo = {
-    wide,
     base: row.getBoundingClientRect().height - (probeMetaLines - 1) * metaLH, // a row with one line each of title and meta
-    // A wide row's title gets whatever its status label leaves: titleW + ownLabel − label(r).
-    span: titleW + ownLabel,
+    span: titleW, // the status has its own fixed cell, so every title gets the same width
     fonts,
     titleLH: parseFloat(cs(title).lineHeight),
     metaLH,
@@ -416,16 +410,11 @@ function measureGeometry() {
     gap: parseFloat(cs($('.row-body', row)).rowGap) || 4,
   };
   probe.remove();
-  labelWidths.clear();
-}
-function labelWidth(label) {
-  if (!labelWidths.has(label)) labelWidths.set(label, textWidth(geo.fonts.trail, label));
-  return labelWidths.get(label);
 }
 function rowEstimate(r) {
   if (!geo) measureGeometry();
   const g = geo;
-  const w = Math.max(120, g.wide ? g.span - labelWidth(statusLabel(r)) : g.span);
+  const w = Math.max(120, g.span);
   const lines = Math.max(1, lineCount(r.title, g.fonts.title, w));
   const metaLines = Math.max(1, lineCount(rowMeta(r), g.fonts.meta, w));
   const relLines = lineCount(relationLine(r), g.fonts.rel, w);
@@ -552,11 +541,14 @@ function rowHTML(r) {
   const title = esc(r.title);
   const meta = esc(rowMeta(r));
   const glyph = `<i class="glyph" aria-hidden="true"></i>`;
+  const dot = '<span class="era-dot" aria-hidden="true"></span>';
   if (state.mode === 'compact') {
-    return `<a class="row" href="#/rfc/${r.n}"><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${meta}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}">${glyph}</span></a>`;
+    return `<a class="row" href="#/rfc/${r.n}"><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${meta}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}">${dot}${glyph}</span></a>`;
   }
-  const trail = state.mode === 'medium' ? glyph : `${glyph}${statusLabel(r)}`;
-  return `<a class="row" href="#/rfc/${r.n}"><span class="row-num">${r.n}</span><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${meta}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}">${trail}</span></a>`;
+  const trail = state.mode === 'medium'
+    ? glyph
+    : `${glyph}<span class="row-status">${STATUS[r.status].label}${r.obsolete ? '<small>Replaced</small>' : ''}</span>`;
+  return `<a class="row" href="#/rfc/${r.n}"><span class="row-num">${r.n}${dot}</span><span class="row-body"><span class="row-title">${title}</span><span class="row-meta">${meta}</span>${relHTML}</span><span class="row-trail ${glyphClass(r)}">${trail}</span></a>`;
 }
 
 function eraDivider(key) {
@@ -570,13 +562,13 @@ function eraDivider(key) {
   el.dataset.era = key;
   el.setAttribute('aria-label', `Now entering ${e.name}, ${e.years}`);
   el.innerHTML = `<div class="era-div-body">
-      <p class="era-div-over">Now entering · ${e.years}</p>
+      <p class="era-div-over"><span class="era-dot" aria-hidden="true"></span>Now entering · ${e.years}</p>
       <h2 class="era-div-name">${e.name}</h2>
       <p class="era-div-blurb">${esc(e.blurb)}</p>
       <p class="era-div-meta">${fmtInt(count)} RFCs · ${span} years</p>
     </div>
     <div class="era-div-chart" aria-hidden="true">
-      <div class="era-div-bars">${years.map((y, i) => `<i style="height:${Math.max(1, Math.round((y.recs.length / db.maxYearCount) * 72))}px;--i:${i}" title="${y.year}: ${y.recs.length} RFCs"></i>`).join('')}</div>
+      <div class="era-div-dots">${years.map((y, i) => `<i style="--n:${Math.max(1, Math.round(y.recs.length / 50))};--i:${i}" title="${y.year}: ${y.recs.length} RFCs"></i>`).join('')}</div>
       <div class="era-div-axis"><span>${years[0]?.year ?? ''}</span><span>${years[years.length - 1]?.year ?? ''}</span></div>
     </div>`;
   return el;
@@ -625,23 +617,58 @@ function scrollToListTop() {
 
 // ── Left rail, filters, chips ─────────────────────────────────────────
 function railHTML(inSheet = false) {
-  const maxEra = Math.max(...ERAS.map((e) => db.eraCount.get(e.key) || 0));
-  const eras = ERAS.map((e) => {
-    const c = db.eraCount.get(e.key) || 0;
-    return `<button class="era-item" type="button" data-era="${e.key}" data-jump-era="${e.key}" aria-current="${e.key === currentEra()}"><span class="strip" aria-hidden="true"></span><span class="name"><b>${e.name}</b><small>${e.years}</small></span><span class="vol"><span>${fmtInt(c)}</span><i style="width:${Math.max(3, Math.round((c / maxEra) * 56))}px" aria-hidden="true"></i></span></button>`;
-  }).join('');
-  const kinds = KINDS.map((k) => `<label class="filter"><input type="checkbox" data-kind="${k}"${state.kinds.has(k) ? ' checked' : ''}><i class="glyph gl-${k}" aria-hidden="true"></i><span class="label">${STATUS[k].label}</span><span class="count">${fmtInt(db.kindCount.get(k) || 0)}</span></label>`).join('');
+  const sfx = inSheet ? '-s' : '';
+  const eras = ERAS.map((e) => `<button class="era-item" type="button" data-era="${e.key}" data-jump-era="${e.key}" aria-current="${e.key === currentEra()}"><span class="era-dot" aria-hidden="true"></span><span class="name"><b>${e.name}</b><small>${e.years}</small></span><span class="count">${fmtInt(db.eraCount.get(e.key) || 0)}</span></button>`).join('');
+  // a kind is a cell you switch on and off: its glyph stays beside its name, with no checkbox in between
+  const toggle = (attr, on, glyph, label, count) => `<label class="filter"><input type="checkbox" ${attr}${on ? ' checked' : ''}><i class="glyph ${glyph}" aria-hidden="true"></i><span class="filter-text"><span class="label">${label}</span><span class="count">${fmtInt(count)} ${count === 1 ? 'RFC' : 'RFCs'}</span></span><span class="filter-switch" aria-hidden="true"></span></label>`;
+  const kinds = KINDS.map((k) => toggle(`data-kind="${k}"`, state.kinds.has(k), `gl-${k}`, STATUS[k].label, db.kindCount.get(k) || 0)).join('');
   const walk = `
-    <div class="panel-head"><h2>Walk through time</h2><p>Six eras of the internet, newest first.</p></div>
-    <div class="era-list">${eras}</div>`;
+    <section class="rail-group" aria-labelledby="rh-walk${sfx}">
+      <div class="rail-head"><div><h2 id="rh-walk${sfx}">Walk through time</h2><p>Six eras of the internet, newest first</p></div></div>
+      <div class="era-list">${eras}</div>
+    </section>`;
   const filters = `
-    <div class="panel-head"><h2>Filter by kind</h2><p>Untick anything you don’t need.</p><button class="text-btn" type="button" data-action="reset-filters" data-reset${filtersActive() ? '' : ' hidden'}>Show every kind</button></div>
-    <div class="filters" role="group" aria-label="Kinds of RFC">
-      ${kinds}
-      <label class="filter"><input type="checkbox" data-replaced${state.replaced ? ' checked' : ''}><i class="glyph gl-Io" aria-hidden="true"></i><span class="label">Include replaced RFCs</span><span class="count">${fmtInt(db.replacedCount)}</span></label>
+    <section class="rail-group" aria-labelledby="rh-kinds${sfx}">
+      <div class="rail-head"><div><h2 id="rh-kinds${sfx}">Filter by kind</h2><p>Switch a kind off to hide it</p></div><button class="text-btn" type="button" data-action="reset-filters" data-reset${filtersActive() ? '' : ' hidden'}>Show all</button></div>
+      <div class="filters" role="group" aria-label="Kinds of RFC">
+        ${kinds}
+        ${toggle('data-replaced', state.replaced, 'gl-Io', 'Include replaced RFCs', db.replacedCount)}
+      </div>
+    </section>`;
+  // the rail leads with where you are, then walks, then filters; the Filters sheet leads with the filters
+  return inSheet ? `${filters}${walk}` : `${nowHTML()}${walk}${filters}`;
+}
+
+// Where you are: the year at the top of the screen, big, in the rail rather than a column of its own.
+function nowHTML() {
+  const y = state.first || db.maxYear;
+  const era = db.years.find((x) => x.year === y)?.era || 'present';
+  return `<div class="now" id="now" data-era="${era}">
+      <span class="now-cap">You’re reading</span>
+      <span class="now-year" id="now-year">${y}</span>
+      <button class="text-btn now-jump" type="button" data-action="jump-years">Jump to a year</button>
+      <span class="now-era"><span class="era-dot" aria-hidden="true"></span><span id="now-era-name">${ERA_BY_KEY[era].name}</span><span class="now-count" id="now-count"></span></span>
     </div>`;
-  // The rail walks first (as in Figma); the Filters sheet leads with the filters.
-  return inSheet ? `${filters}<div class="rail-divider"></div>${walk}` : `${walk}<div class="rail-divider"></div>${filters}`;
+}
+
+let nowYear = null;
+function updateNow(year, force) {
+  const el = railEl && $('#now', railEl);
+  if (!el || (year === nowYear && !force)) return;
+  const changed = year !== nowYear;
+  nowYear = year;
+  const yr = db.years.find((x) => x.year === year);
+  const sec = state.sections.find((x) => x.year === year);
+  const total = yr ? yr.recs.length : 0;
+  const shown = sec ? sec.recs.length : 0;
+  const era = yr?.era || 'present';
+  const num = $('#now-year', el);
+  num.textContent = year;
+  // a jump lands with a small settle; while scrolling, the year just turns over like a counter
+  if (changed && !listEl.classList.contains('is-scrolling')) { num.classList.remove('is-tick'); void num.offsetWidth; num.classList.add('is-tick'); }
+  el.dataset.era = era;
+  $('#now-era-name', el).textContent = ERA_BY_KEY[era].name;
+  $('#now-count', el).textContent = shown !== total ? `${fmtInt(shown)} of ${fmtInt(total)} RFCs` : `${fmtInt(total)} ${total === 1 ? 'RFC' : 'RFCs'}`;
 }
 
 function renderRailAndFilters() {
@@ -749,9 +776,11 @@ function updateCurrent(force) {
   let last = null;
   let era = null;
   let topSec = null;
+  let reading = null; // the year you're reading: the first one showing more than a sliver
   for (const s of state.sections) {
     const r = s.el.getBoundingClientRect();
     if (era === null && r.bottom > focusY) era = s.era;
+    if (reading === null && r.bottom > top + 48) reading = s.year;
     if (r.bottom <= top) continue;
     if (r.top >= bottom) break;
     if (first === null) { first = s.year; topSec = s; }
@@ -771,6 +800,7 @@ function updateCurrent(force) {
     const on = listEl.getBoundingClientRect().top < navHeight() + 8;
     scrubEl.classList.toggle('is-on', on);
   }
+  updateNow(reading ?? first, force); // it checks for a change itself
   const eraChanged = era !== focusEra;
   if (!force && !eraChanged && first === lastFirst && last === lastLast) return;
   lastFirst = first;
@@ -781,6 +811,9 @@ function updateCurrent(force) {
   positionWindow();
   positionScrubWindow();
   if (eraChanged || force) {
+    // the search lens carries the colour of the era you're reading
+    const lens = $('#search');
+    if (lens) lens.dataset.era = era;
     $$('.era-item', railEl).forEach((b) => b.setAttribute('aria-current', String(b.dataset.era === era)));
     $$('.chip[data-jump-era]', chipsEl).forEach((b) => { if (b.dataset.era === era) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
   }
@@ -935,7 +968,7 @@ function wireScrubber() {
 
 // ── Jump sheet: eras · years · streams ────────────────────────────────
 function renderJumpSheet() {
-  $('#jump-eras').innerHTML = `<div class="jump-eras">${ERAS.map((e) => `<a class="jump-era" href="#/era/${e.key}" data-era="${e.key}"><span class="jump-era-text"><b>${e.name}</b><small>${e.years} · ${fmtInt(db.eraCount.get(e.key) || 0)} RFCs</small><span>${esc(e.blurb)}</span></span></a>`).join('')}</div>`;
+  $('#jump-eras').innerHTML = `<div class="jump-eras">${ERAS.map((e) => `<a class="jump-era" href="#/era/${e.key}" data-era="${e.key}"><span class="era-dot" aria-hidden="true"></span><span class="jump-era-text"><b>${e.name}</b><small>${e.years} · ${fmtInt(db.eraCount.get(e.key) || 0)} RFCs</small><span>${esc(e.blurb)}</span></span></a>`).join('')}</div>`;
   const decades = new Map();
   for (const y of db.years) {
     const d = Math.floor(y.year / 10) * 10;
