@@ -600,6 +600,12 @@ body.legend-hidden .legend-link { display: flex; }
    drops in a beat later; coming back, the bar lifts away first and the rail follows it up */
 .doc-shell .toc-rail { transition: transform var(--motion-duration-slow) var(--motion-ease-standard) 90ms; }
 .doc-shell.has-bar .toc-rail { transform: translateY(var(--size-header)); transition-delay: 0ms; }
+/* the strip the rail clears is already the bar's colour: a tinted band rides just above the rail, out of
+   sight under the header at rest, so the space it opens is filled before the bar lands on it */
+.doc-shell .toc-rail::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--size-header); pointer-events: none;
+  background: var(--era-tint); border-bottom: 1px solid var(--color-border-default);
+}
 .doc-shell .about-rail { position: static; }
 .doc-main { padding: 24px 40px 56px; }
 .toc {
