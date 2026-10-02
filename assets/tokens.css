@@ -50,6 +50,7 @@
   --size-cell: 56px;      /* the row module: every shelf row and rail cell snaps to it */
   --size-rail: 280px;     /* the left rail column, and the logo cell above it */
   --size-map: 64px;       /* the minimap column, and the theme cell above it */
+  --size-aside: 320px;    /* an RFC page's right column, and the Contribute · About · theme cells above it */
   --size-frame: 1440px;   /* the hairline frame header and page share */
   --measure-prose: 680px; --measure-plaintext: 605px;
 

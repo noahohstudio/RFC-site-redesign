@@ -629,7 +629,7 @@ function railHTML(inSheet = false) {
     </section>`;
   const filters = `
     <section class="rail-group" aria-labelledby="rh-kinds${sfx}">
-      <div class="rail-head"><div><h2 id="rh-kinds${sfx}">Filter by kind</h2><p>Switch a kind off to hide it</p></div><button class="text-btn" type="button" data-action="reset-filters" data-reset${filtersActive() ? '' : ' hidden'}>Show all</button></div>
+      <div class="rail-head"><div><h2 id="rh-kinds${sfx}">Filter by kind</h2><p>Switch a kind off to hide it</p></div><button class="text-btn rail-reset${filtersActive() ? ' is-on' : ''}" type="button" data-action="reset-filters" data-reset>Show all</button></div>
       <div class="filters" role="group" aria-label="Kinds of RFC">
         ${kinds}
         ${toggle('data-replaced', state.replaced, 'gl-Io', 'Include replaced RFCs', db.replacedCount)}
@@ -693,7 +693,7 @@ function wireRailFade() {
 function syncFilterInputs() {
   $$('input[data-kind]').forEach((i) => { i.checked = state.kinds.has(i.dataset.kind); });
   $$('input[data-replaced]').forEach((i) => { i.checked = state.replaced; });
-  $$('[data-reset]').forEach((b) => { b.hidden = !filtersActive(); });
+  $$('[data-reset]').forEach((b) => { b.classList.toggle('is-on', filtersActive()); });
   fadeRail();
 }
 

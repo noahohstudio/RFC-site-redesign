@@ -22,6 +22,8 @@
         if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.dataset.theme = t;
       } catch (e) {}
+      // prototype switch: ?search=block shows the earlier square search cell
+      if (/[?&]search=block\b/.test(location.search)) document.documentElement.classList.add('search-block');
     })();
   </script>
   <script type="importmap">{"imports":{"./assets/app.js":"./assets/app.js?v=20261001-0212","./assets/data.js":"./assets/data.js?v=20261001-0212","./assets/docview.js":"./assets/docview.js?v=20261001-0212","./assets/indexview.js":"./assets/indexview.js?v=20261001-0212","./assets/menus.js":"./assets/menus.js?v=20261001-0212","./assets/perf.js":"./assets/perf.js?v=20261001-0212","./assets/search.js":"./assets/search.js?v=20261001-0212","./assets/searchui.js":"./assets/searchui.js?v=20261001-0212","./assets/timeline.js":"./assets/timeline.js?v=20261001-0212","./assets/ui.js":"./assets/ui.js?v=20261001-0212"}}</script>

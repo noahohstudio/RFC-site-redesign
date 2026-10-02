@@ -166,14 +166,16 @@ function factsHTML(r) {
     ['Status', `<span class="status ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i>${STATUS[r.status].label}${r.obsolete ? ', replaced' : ''}</span>${ids}${pub}`],
     ['Published', monthYear(r)],
     ['Stream', `${r.stream}${r.wg ? ` · ${esc(r.wg)}` : ''}`],
-    ['Authors', r.authors.length ? esc(authorsFull(r)) : 'Not recorded', true],
+    ['Authors', r.authors.length ? keepTogether(authorsFull(r)) : 'Not recorded', true],
     ['Length', r.pages ? `${r.pages} pages` : 'Not recorded'],
   ];
   if (r.obsoletedBy.length) facts.push(['Replaced by', relLinks(r.obsoletedBy)]);
   if (r.obsoletes.length) facts.push(['Replaces', relLinks(r.obsoletes)]);
   if (r.updatedBy.length) facts.push(['Updated by', relLinks(r.updatedBy)]);
   if (r.updates.length) facts.push(['Updates', relLinks(r.updates)]);
-  facts.push(['DOI', doi(r)]);
+  // a DOI breaks after its prefix, so the RFC part always starts its own line
+  const [pre, suf] = doi(r).split('/');
+  facts.push(['DOI', `<span class="doi">${pre}/<br>${suf}</span>`]);
   return facts.map(([k, v, wide]) => `<div class="fact${wide ? ' fact-wide' : ''}"><dt>${k}</dt><dd>${v}</dd></div>`).join('');
 }
 
@@ -206,8 +208,16 @@ function noteHTML(r) {
       </section>`;
 }
 
+// Lists of RFC numbers sit as an aligned grid of whole numbers: each keeps its comma, and none breaks in half.
 function relLinks(nums) {
-  return [...nums].sort((a, b) => a - b).map((n) => `<a href="#/rfc/${n}">${n}</a>`).join(', ');
+  const sorted = [...nums].sort((a, b) => a - b);
+  return `<span class="numlist">${sorted.map((n, i) => `<span><a href="#/rfc/${n}">${n}</a>${i < sorted.length - 1 ? ',' : ''}</span>`).join(' ')}</span>`;
+}
+
+// Names and phrases stay whole: a line may break between them, never inside one.
+function keepTogether(text, sep = ', ') {
+  const parts = text.split(sep);
+  return parts.map((x, i) => `<span class="nw">${esc(x)}${i < parts.length - 1 ? sep.trim() : ''}</span>`).join(' ');
 }
 
 function ageLabel(r) {
@@ -299,13 +309,17 @@ function renderBar(r) {
   const also = r.also.map(prettyId);
   barEl.hidden = false;
   barEl.classList.remove('is-on');
+  // the bar takes the same era tint as the number banner, and sits on the page's own columns
+  barEl.dataset.era = r.era;
   barEl.innerHTML = `
-    <div class="docbar-cur" data-era="${r.era}">
-      <span class="docbar-num">${r.n}<span class="era-dot" aria-hidden="true"></span></span>
-      <span class="docbar-body"><span class="docbar-over">${STATUS[r.status].label}${also.length ? ` · ${also.join(' · ')}` : ''}${r.obsolete ? ' · replaced' : ''} · ${ERA_BY_KEY[r.era].name} era</span><span class="docbar-title">${esc(r.title)}</span></span>
-      <span class="${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i></span>
-    </div>
-    <button class="docbar-act" type="button" aria-expanded="false" aria-controls="tocpanel" data-action="toc"><span>Contents</span>${icon('chevron-down')}</button>`;
+    <div class="docbar-inner">
+      <div class="docbar-cur">
+        <span class="docbar-num">${r.n}<span class="era-dot" aria-hidden="true"></span></span>
+        <span class="docbar-body"><span class="docbar-over">${ERA_BY_KEY[r.era].name} era${also.length ? ` · ${also.join(' · ')}` : ''}</span><span class="docbar-title">${esc(r.title)}</span></span>
+      </div>
+      <span class="docbar-status ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i>${STATUS[r.status].label}${r.obsolete ? ', replaced' : ''}</span>
+      <button class="docbar-act" type="button" aria-expanded="false" aria-controls="tocpanel" data-action="toc"><span>Contents</span>${icon('chevron-down')}</button>
+    </div>`;
 }
 
 function tocHTML(heads, currentId) {
