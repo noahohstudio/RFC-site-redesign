@@ -668,8 +668,9 @@ body.legend-hidden .legend-link { display: flex; }
 .doc-shell .rail { top: var(--size-row); }
 /* the contents rail and the document bar move as a pair: going down, the rail makes room first and the bar
    drops in a beat later; coming back, the bar lifts away first and the rail follows it up */
-.doc-shell .toc-rail { transition: transform var(--motion-duration-slow) var(--motion-ease-standard) 90ms; }
-.doc-shell.has-bar .toc-rail { transform: translateY(var(--size-header)); transition-delay: 0ms; }
+/* (they move by their sticky offset, not a transform, so at the end of the page they still stop at the footer) */
+.doc-shell .toc-rail { transition: top var(--motion-duration-slow) var(--motion-ease-standard) 90ms; }
+.doc-shell.has-bar .toc-rail { top: calc(var(--size-row) + var(--size-header)); transition-delay: 0ms; }
 /* the strip the rail clears belongs to the rail: its "On this page" band reaches up into it (out of sight
    under the header at rest), so the space it opens is filled until the bar lands on it */
 .doc-shell .toc-rail::before {
@@ -679,8 +680,8 @@ body.legend-hidden .legend-link { display: flex; }
 /* the aside follows you down the document the same way: pinned under the header, moving with the contents rail
    when the document bar drops in, its Crock band reaching up into the strip it clears. When it's taller than the
    screen it scrolls inside itself, and a soft edge says there's more */
-.doc-shell .about-rail { transition: transform var(--motion-duration-slow) var(--motion-ease-standard) 90ms; }
-.doc-shell.has-bar .about-rail { transform: translateY(var(--size-header)); transition-delay: 0ms; }
+.doc-shell .about-rail { transition: top var(--motion-duration-slow) var(--motion-ease-standard) 90ms; }
+.doc-shell.has-bar .about-rail { top: calc(var(--size-row) + var(--size-header)); transition-delay: 0ms; }
 .doc-shell .about-rail::before {
   content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--size-header); pointer-events: none;
   background: var(--color-bg-subtle);
@@ -1129,7 +1130,7 @@ html.is-locked { overflow: hidden; }
   .shell { grid-template-columns: minmax(0, 1fr) var(--size-map); }
   .doc-shell { grid-template-columns: minmax(0, 1fr); }
   .doc-shell .center { border-right: 0; }
-  .doc-shell .about-rail { position: static; transform: none; border-top: 1px solid var(--color-border-default); }
+  .doc-shell .about-rail { position: static; border-top: 1px solid var(--color-border-default); }
   .doc-shell .about-rail::before { display: none; }
   .doc-shell .about-rail > .about { max-height: none; overflow: visible; }
   .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
