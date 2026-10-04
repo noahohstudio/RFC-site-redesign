@@ -2,7 +2,7 @@
 // overlay on phones. Keyboard-first: ⌘K or / from anywhere, ↑↓ to move, ↵ to open.
 import { db, ERA_BY_KEY, STATUS, esc, fmtInt } from './data.js';
 import { search } from './search.js';
-import { $, $$, icon, mqPhone, store, openDialog, closeDialog, closeMenus, edgeFade } from './ui.js';
+import { $, $$, icon, mqPhone, mqTablet, store, openDialog, closeDialog, closeMenus, edgeFade } from './ui.js';
 
 const START = [
   { n: 1, meta: 'The very first RFC · 1969' },
@@ -53,14 +53,17 @@ export function init() {
       else { closeDialog($('#dlg-search')); minput.value = ''; }
     });
   }
-  mqPhone.addEventListener('change', () => { closeDesk(); closeDialog($('#dlg-search')); });
+  mqTablet.addEventListener('change', () => { closeDesk(); closeDialog($('#dlg-search')); });
 }
 
+// On desktop the header itself becomes the field, from Browse to About; on smaller screens search takes the whole screen.
 export function openFromShortcut() {
-  if (mqPhone.matches) { openMobile(); return; }
+  if (mqTablet.matches) { openMobile(); return; }
+  $('#nav').classList.add('is-searching');
   const input = $('#search-input');
   input.focus();
   input.select();
+  openDesk(); // the suggestions open with the field, whether or not a focus event follows
 }
 
 export function openMobile() {
@@ -93,13 +96,14 @@ function openDesk() {
 
 function closeDesk() {
   const pop = $('#search-pop');
-  if (pop.hidden) return;
+  if (pop.hidden) { $('#nav').classList.remove('is-searching'); return; }
   pop.hidden = true;
   $('#search').classList.remove('is-open');
   document.body.classList.remove('search-open');
   $('#search-input').setAttribute('aria-expanded', 'false');
   $('#search-input').removeAttribute('aria-activedescendant');
   if (!document.querySelector('.mega:not([hidden])')) $('#scrim').hidden = true;
+  $('#nav').classList.remove('is-searching'); // the menus and the lens come back
 }
 
 // ── Controller shared by dropdown + overlay ───────────────────────────

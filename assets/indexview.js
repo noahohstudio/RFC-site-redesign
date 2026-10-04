@@ -620,7 +620,7 @@ function railHTML(inSheet = false) {
   const sfx = inSheet ? '-s' : '';
   const eras = ERAS.map((e) => `<button class="era-item" type="button" data-era="${e.key}" data-jump-era="${e.key}" aria-current="${e.key === currentEra()}"><span class="era-dot" aria-hidden="true"></span><span class="name"><b>${e.name}</b><small>${e.years}</small></span><span class="count">${fmtInt(db.eraCount.get(e.key) || 0)}</span></button>`).join('');
   // a kind is a cell you switch on and off: its glyph stays beside its name, with no checkbox in between
-  const toggle = (attr, on, glyph, label, count) => `<label class="filter"><input type="checkbox" ${attr}${on ? ' checked' : ''}><i class="glyph ${glyph}" aria-hidden="true"></i><span class="filter-text"><span class="label">${label}</span><span class="count">${fmtInt(count)} ${count === 1 ? 'RFC' : 'RFCs'}</span></span><span class="filter-switch" aria-hidden="true"></span></label>`;
+  const toggle = (attr, on, glyph, label, count) => `<label class="filter"><input type="checkbox" ${attr}${on ? ' checked' : ''}><i class="glyph ${glyph}" aria-hidden="true"></i><span class="filter-text"><span class="label">${label}</span><span class="count">${fmtInt(count)} ${count === 1 ? 'RFC' : 'RFCs'}</span></span><span class="filter-dot" aria-hidden="true"></span></label>`;
   const kinds = KINDS.map((k) => toggle(`data-kind="${k}"`, state.kinds.has(k), `gl-${k}`, STATUS[k].label, db.kindCount.get(k) || 0)).join('');
   const walk = `
     <section class="rail-group" aria-labelledby="rh-walk${sfx}">
@@ -812,8 +812,8 @@ function updateCurrent(force) {
   positionScrubWindow();
   if (eraChanged || force) {
     // the search lens carries the colour of the era you're reading
-    const lens = $('#search');
-    if (lens) lens.dataset.era = era;
+    const nav = $('#nav');
+    if (nav) nav.dataset.era = era;
     $$('.era-item', railEl).forEach((b) => b.setAttribute('aria-current', String(b.dataset.era === era)));
     $$('.chip[data-jump-era]', chipsEl).forEach((b) => { if (b.dataset.era === era) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
   }

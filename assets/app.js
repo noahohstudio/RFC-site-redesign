@@ -139,6 +139,7 @@ function onClick(e) {
       case 'theme': ui.toggleTheme(); break;
       case 'menu': ui.openDialog('dlg-menu'); break;
       case 'search': searchUI.openFromShortcut(); break;
+      case 'search-close': searchUI.close(); break;
       case 'legend': ui.openDialog('dlg-legend'); break;
       case 'glossary': ui.openDialog('dlg-glossary'); break;
       case 'jump-eras': index.openJump('eras'); break;

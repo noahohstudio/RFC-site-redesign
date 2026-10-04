@@ -22,8 +22,6 @@
         if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.dataset.theme = t;
       } catch (e) {}
-      // prototype switch: ?search=block shows the earlier square search cell
-      if (/[?&]search=block\b/.test(location.search)) document.documentElement.classList.add('search-block');
     })();
   </script>
   <script type="importmap">{"imports":{"./assets/app.js":"./assets/app.js?v=20261001-0212","./assets/data.js":"./assets/data.js?v=20261001-0212","./assets/docview.js":"./assets/docview.js?v=20261001-0212","./assets/indexview.js":"./assets/indexview.js?v=20261001-0212","./assets/menus.js":"./assets/menus.js?v=20261001-0212","./assets/perf.js":"./assets/perf.js?v=20261001-0212","./assets/search.js":"./assets/search.js?v=20261001-0212","./assets/searchui.js":"./assets/searchui.js?v=20261001-0212","./assets/timeline.js":"./assets/timeline.js?v=20261001-0212","./assets/ui.js":"./assets/ui.js?v=20261001-0212"}}</script>
@@ -93,36 +91,42 @@
 
 <a class="skip" href="#main">Skip to the archive</a>
 
-<header class="nav" id="nav">
+<header class="nav" id="nav" data-era="present">
   <div class="nav-inner">
     <a class="brand nav-brand" href="#/" aria-label="RFC Editor — all RFCs">
       <span class="strata" aria-hidden="true"><i data-era="arpanet"></i><i data-era="internetworking"></i><i data-era="web"></i><i data-era="scale"></i><i data-era="encryption"></i><i data-era="present"></i></span>
       <span class="brand-name">RFC Editor</span>
     </a>
-    <nav class="nav-groups" aria-label="Main">
-      <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-browse" data-menu="browse">Browse<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
-      <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-learn" data-menu="learn">Learn<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
-    </nav>
 
-    <!-- search: a compact cell until you hover it or press ⌘K; the lens holds the colour of the era you're in -->
-    <div class="search" id="search" role="search" data-era="present">
-      <label class="search-field" for="search-input">
+    <!-- Browse to About. Searching turns this whole span into the field, so the logo cell over the rail stays put -->
+    <div class="nav-mid">
+      <nav class="nav-groups" aria-label="Main">
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-browse" data-menu="browse">Browse<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-learn" data-menu="learn">Learn<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      </nav>
+      <!-- the lens: its dot carries the colour of the era you're reading -->
+      <button class="nav-cell nav-lens" type="button" data-action="search" aria-label="Search the archive (⌘K)" title="Search  ⌘K">
         <svg class="search-glass" viewBox="0 0 32 32" aria-hidden="true"><circle class="glass-lens" cx="13.5" cy="13.5" r="8.25"/><path class="glass-handle" d="M19.6 19.6L26.5 26.5"/><circle class="glass-dot" cx="13.5" cy="13.5" r="3.25"/></svg>
-        <input class="search-input" id="search-input" type="search" autocomplete="off" spellcheck="false"
-               placeholder="Search 9,842 RFCs — try “9110” or “email”"
-               role="combobox" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list"
-               aria-label="Search the archive">
-        <button class="search-clear" type="button" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
-        <kbd class="kbd search-kbd" aria-hidden="true">⌘K</kbd>
-      </label>
-      <div class="search-pop" id="search-pop" hidden><div class="pop-scroll"></div></div>
+      </button>
+      <nav class="nav-groups nav-groups-end" aria-label="More">
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-contribute" data-menu="contribute">Contribute<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-about" data-menu="about">About<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      </nav>
+
+      <div class="search" id="search" role="search">
+        <label class="search-field" for="search-input">
+          <svg class="search-glass" viewBox="0 0 32 32" aria-hidden="true"><circle class="glass-lens" cx="13.5" cy="13.5" r="8.25"/><path class="glass-handle" d="M19.6 19.6L26.5 26.5"/><circle class="glass-dot" cx="13.5" cy="13.5" r="3.25"/></svg>
+          <input class="search-input" id="search-input" type="search" autocomplete="off" spellcheck="false"
+                 placeholder="Search 9,842 RFCs: a number, a title, a name"
+                 role="combobox" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list"
+                 aria-label="Search the archive">
+          <button class="search-clear" type="button" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+          <button class="search-esc" type="button" data-action="search-close" aria-label="Close search">Esc</button>
+        </label>
+        <div class="search-pop" id="search-pop" hidden><div class="pop-scroll"></div></div>
+      </div>
     </div>
 
-    <nav class="nav-groups nav-groups-end" aria-label="More">
-      <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-contribute" data-menu="contribute">Contribute<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
-      <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-about" data-menu="about">About<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
-    </nav>
-    <button class="nav-cell nav-search-btn" type="button" data-action="search" aria-label="Search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></button>
     <button class="nav-cell nav-menu-btn" type="button" data-action="menu" aria-label="Menu"><span class="nav-menu-label">Menu</span><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
     <button class="nav-cell nav-theme" type="button" data-action="theme" aria-label="Switch to dark mode"><svg class="icon" aria-hidden="true"><use href="#i-contrast"/></svg></button>
   </div>

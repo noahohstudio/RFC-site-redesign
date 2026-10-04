@@ -85,8 +85,8 @@ export function show(n, section) {
   }, { rootMargin: `-${navHeight()}px 0px 0px 0px` });
   headerIO.observe($('#doc-head', viewEl));
   remember(rec.n);
-  const lens = $('#search');
-  if (lens) lens.dataset.era = rec.era;
+  const nav = $('#nav');
+  if (nav) nav.dataset.era = rec.era;
   loadText(rec);
 }
 
