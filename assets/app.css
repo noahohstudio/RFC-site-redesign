@@ -359,13 +359,30 @@ button.res-row { width: 100%; text-align: left; }
 .rail-left::after { bottom: 0; height: 64px; background: linear-gradient(transparent, var(--color-bg-canvas)); }
 .rail-left.fade-top::before, .rail-left.fade-bottom::after { opacity: 1; }
 
-/* now: the big sticky year, so the shelves don't need a whole column for it */
-.now { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 4px 12px; padding: 20px 24px 18px; border-bottom: 1px solid var(--color-border-default); }
-.now-cap { grid-column: 1 / -1; font: 400 12px/16px var(--font-sans); color: var(--color-text-muted); }
-.now-year { font: 400 56px/56px var(--font-mono); letter-spacing: -0.03em; color: var(--color-text-primary); }
+/* now: the big sticky year, so the shelves don't need a whole column for it. The whole block jumps to a year:
+   the chevrons in its corner say the year can change, and part on hover as if it's about to turn */
+.now {
+  position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; width: 100%;
+  padding: 20px 24px 18px; border-bottom: 1px solid var(--color-border-default); text-align: left;
+}
+.now:hover { background: var(--color-bg-subtle); }
+.now .era-dot { transition: transform var(--motion-duration-base) var(--motion-ease-standard); }
+.now:hover .era-dot { transform: scale(1.375); }
+.now:focus-visible { outline-offset: -4px; }
+.now-cap { font: 400 12px/16px var(--font-sans); color: var(--color-text-muted); }
+/* the ink sits on the content edge, in line with the count below it */
+.now-pick {
+  width: 20px; height: 20px; margin: -2px -5px -2px 0; fill: none;
+  stroke: var(--color-icon-muted); stroke-width: 1.5; stroke-linecap: square;
+  transition: stroke var(--motion-duration-base) var(--motion-ease-standard);
+}
+.now-pick path { transition: transform var(--motion-duration-base) var(--motion-ease-standard); }
+.now:hover .now-pick { stroke: var(--color-icon-primary); transition-duration: var(--motion-duration-fast); }
+.now:hover .now-pick-up { transform: translateY(-1.5px); }
+.now:hover .now-pick-down { transform: translateY(1.5px); }
+.now-year { grid-column: 1 / -1; font: 400 56px/56px var(--font-mono); letter-spacing: -0.03em; color: var(--color-text-primary); }
 .now-year.is-tick { animation: now-tick var(--motion-duration-base) var(--motion-ease-enter); }
 @keyframes now-tick { from { opacity: 0.35; transform: translateY(6px); } }
-.now-jump { align-self: end; margin-bottom: 6px; }
 .now-era { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font: 500 14px/20px var(--font-sans); color: var(--era-text); }
 .now-era .now-count { margin-left: auto; font-weight: 400; color: var(--color-text-muted); }
 
@@ -1131,7 +1148,7 @@ html.is-locked { overflow: hidden; }
 /* ── Motion ───────────────────────────────────────────────────────── */
 /* Colours fade instead of snapping: a hover is answered quickly (fast) and let go more softly (base).
    Cells answer the way the grid shows selection, edges turning to ink; dots answer by growing. */
-:where(.btn, .text-btn, .icon-btn, .nav-trigger, .nav-cell, .nav-brand, .nav-item, .res-row, .era-item, .chip, .filter,
+:where(.btn, .text-btn, .icon-btn, .nav-trigger, .nav-cell, .nav-brand, .nav-item, .res-row, .era-item, .chip, .filter, .now,
   .filter .label, .row, .pointer, .toc-item, .crumbs a, .fmt, .sheet-orig, .fact dd a, a.lin-step .lin-title, .action-row,
   .crock-foot a, .docbar-act, .footer-col a, .footer-col button, .footer-bottom a, .jump-era, .jump-year, .jump-stream b,
   .era-jump a .era-tag, .tabs button, .mmenu-group > button, .legend-link span, .list-end a, .callout-body a, .mega-aside-link) {
@@ -1139,13 +1156,13 @@ html.is-locked { overflow: hidden; }
   transition-duration: var(--motion-duration-base);
   transition-timing-function: var(--motion-ease-standard);
 }
-:where(.btn, .text-btn, .icon-btn, .nav-trigger, .nav-cell, .nav-brand, .nav-item, .res-row, .era-item, .chip, .filter,
+:where(.btn, .text-btn, .icon-btn, .nav-trigger, .nav-cell, .nav-brand, .nav-item, .res-row, .era-item, .chip, .filter, .now,
   .row, .pointer, .toc-item, .crumbs a, .fmt, .sheet-orig, .fact dd a, .action-row, .crock-foot a, .docbar-act,
   .footer-col a, .footer-col button, .footer-bottom a, .jump-era, .jump-year, .tabs button, .mmenu-group > button,
   .list-end a, .callout-body a, .mega-aside-link):hover,
 a.lin-step:hover .lin-title, .jump-stream:hover b, .era-jump a:hover .era-tag,
 .legend-link:hover span { transition-duration: var(--motion-duration-fast); }
-:where(.btn, .chip, .era-item, .row, .res-row, .toc-item, .pointer, .filter):focus-visible { transition-duration: 0s; }
+:where(.btn, .chip, .era-item, .row, .res-row, .toc-item, .pointer, .filter, .now):focus-visible { transition-duration: 0s; }
 .btn:active { transition-duration: 0s; }
 
 /* arrows lean the way they point */

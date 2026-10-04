@@ -640,15 +640,17 @@ function railHTML(inSheet = false) {
 }
 
 // Where you are: the year at the top of the screen, big, in the rail rather than a column of its own.
+// The whole block is the way to jump to another year; the chevrons in its corner say the year can change.
 function nowHTML() {
   const y = state.first || db.maxYear;
   const era = db.years.find((x) => x.year === y)?.era || 'present';
-  return `<div class="now" id="now" data-era="${era}">
+  return `<button class="now" id="now" type="button" data-action="jump-years" data-era="${era}" title="Jump to a year">
+      <span class="sr-only">Jump to a year.</span>
       <span class="now-cap">You’re reading</span>
+      <svg class="now-pick" viewBox="0 0 20 20" aria-hidden="true"><path class="now-pick-up" d="M6 8.25L10 4.25L14 8.25"/><path class="now-pick-down" d="M6 11.75L10 15.75L14 11.75"/></svg>
       <span class="now-year" id="now-year">${y}</span>
-      <button class="text-btn now-jump" type="button" data-action="jump-years">Jump to a year</button>
-      <span class="now-era"><span class="era-dot" aria-hidden="true"></span><span id="now-era-name">${ERA_BY_KEY[era].name}</span><span class="now-count" id="now-count"></span></span>
-    </div>`;
+      <span class="now-era"><span class="era-dot" aria-hidden="true"></span><span id="now-era-name">${ERA_BY_KEY[era].name}</span> <span class="now-count" id="now-count"></span></span>
+    </button>`;
 }
 
 let nowYear = null;
