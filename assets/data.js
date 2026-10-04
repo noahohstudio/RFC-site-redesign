@@ -368,7 +368,8 @@ const SOURCE_PHRASE = {
   IETF: ', from the IETF', IAB: ', from the Internet Architecture Board', IRTF: ', from the Internet Research Task Force',
   Independent: ', published as an independent submission', Editorial: ', from the RFC Series’ editorial stream',
 };
-export function factsLine(rec) {
+// { standing: false } leaves out whether it still holds, for when Crock's verdict already says so.
+export function factsLine(rec, { standing = true } = {}) {
   const when = monthYear(rec);
   const source = rec.wg ? `, from the ${rec.wg} working group` : SOURCE_PHRASE[rec.stream] || '';
   const series = rec.also.filter((id) => /^(STD|BCP|FYI)/.test(id)).map(prettyId);
@@ -377,6 +378,7 @@ export function factsLine(rec) {
     : `${KIND_PHRASE[rec.status]} from ${when}${source}`;
   let s = `${head}${series.length ? ` (${series.join(', ')})` : ''}.`;
   if (rec.obsoletes.length) s += ` It replaced ${plural(rec.obsoletes, 'RFC', 'RFCs')} ${numList(rec.obsoletes, 3)}.`;
+  if (!standing) return s;
   if (rec.obsolete) {
     const first = Math.min(...rec.obsoletedBy.map((n) => db.byN.get(n)?.year || 9999));
     s += ` It was itself replaced in ${first}.`;

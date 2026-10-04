@@ -6,6 +6,7 @@ import {
   citation, numList, plural, noteFor, factsLine,
 } from './data.js';
 import { $, $$, icon, mqPhone, navHeight, store, toast, edgeFade } from './ui.js';
+import { verdict, readReferences, citesIn, builtOn, replacedSince, citeNote, readAbstract } from './crock.js';
 
 const texts = new Map();
 let cur = null; // { rec, heads, ctrl }
@@ -14,6 +15,7 @@ let rafScroll = 0;
 let viewEl;
 let barEl;
 let tocPanel;
+let crockPanel;
 let toTop;
 
 export function init() {
@@ -35,6 +37,16 @@ export function init() {
   tocPanel.innerHTML = '<div class="toc-list"></div>'; // the list scrolls, and keeps its place between updates
   document.body.append(tocPanel);
   edgeFade(tocPanel.firstElementChild);
+  // tablets and phones have no aside column: the document bar's Crock cell opens the same answers
+  crockPanel = document.createElement('div');
+  crockPanel.className = 'tocpanel crockpanel';
+  crockPanel.id = 'crockpanel';
+  crockPanel.hidden = true;
+  crockPanel.setAttribute('role', 'region');
+  crockPanel.setAttribute('aria-label', 'Crock, the archivist');
+  crockPanel.innerHTML = '<div class="toc-list crock-list"></div>';
+  document.body.append(crockPanel);
+  edgeFade(crockPanel.firstElementChild);
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', () => { measureHeads(); onScroll(); }, { passive: true });
   document.addEventListener('click', onClick);
@@ -98,10 +110,17 @@ export function scrollToSection(id) {
   closeToc();
 }
 
+// Closes whichever document-bar panel is open: Contents, or Crock on smaller screens.
 export function closeToc() {
   if (!tocPanel) return;
   tocPanel.hidden = true;
   $('.docbar-act', barEl)?.setAttribute('aria-expanded', 'false');
+  closeCrock();
+}
+function closeCrock() {
+  if (!crockPanel) return;
+  crockPanel.hidden = true;
+  $('.docbar-crock', barEl)?.setAttribute('aria-expanded', 'false');
 }
 
 // ── Page ──────────────────────────────────────────────────────────────
@@ -228,11 +247,6 @@ function ageLabel(r) {
   return `${y} ${y === 1 ? 'year' : 'years'}`;
 }
 
-function standingLabel(r) {
-  if (r.obsolete) return `Replaced, ${Math.min(...r.obsoletedBy.map((n) => db.byN.get(n)?.year || 9999))}`;
-  if (r.updatedBy.length) return r.updatedBy.length === 1 ? 'Updated once' : `Updated ${r.updatedBy.length}×`;
-  return 'Current';
-}
 
 const pointerHTML = (p) => `
         <a class="pointer" href="#/rfc/${p.rec.n}" data-era="${p.rec.era}">
@@ -243,19 +257,23 @@ const pointerHTML = (p) => `
 
 function aboutHTML(r) {
   const rel = related(r);
-  // Crock says more than where to go next: what the RFC is in plain words, and where it stands
+  // Crock answers three questions, in order: does it still hold, what does it stand on, where does it lead.
+  // What it stands on is read from the RFC's own references once the text arrives.
   const crock = `
     <section class="crock" aria-labelledby="crock-h">
-      <div class="crock-head">${icon('compass')}<h2 id="crock-h">Ask Crock</h2>${noteFor(r) ? '<span class="note-tag">Draft note above</span>' : ''}</div>
-      <div class="crock-short"><p class="crock-k">In short</p><p>${esc(factsLine(r))}</p></div>
+      <div class="crock-head">${icon('compass')}<h2 id="crock-h">Crock, the archivist</h2>${noteFor(r) ? '<span class="note-tag">Draft note above</span>' : ''}</div>
+      ${verdictHTML(r)}
+      <div class="crock-short"><p class="crock-k">In short</p><p>${esc(factsLine(r, { standing: false }))}</p><div class="crock-why" id="crock-why" hidden></div></div>
       <div class="crock-glance">
         <div><span class="crock-k">Age</span><b>${ageLabel(r)}</b></div>
-        <div><span class="crock-k">Standing</span><b>${standingLabel(r)}</b></div>
+        <div><span class="crock-k">Cites</span><b id="crock-cites">…</b></div>
         <div><span class="crock-k">Length</span><b>${r.pages ? `${r.pages} pages` : '—'}</b></div>
       </div>
+      <div class="crock-here" id="crock-here"><p class="crock-sub">Cited here</p><p class="crock-none">Reading its references…</p></div>
+      <div class="crock-built" id="crock-built" hidden></div>
       <p class="crock-q" id="rel-q">${relatedQuestion(r)}</p>
-      ${rel.length ? rel.map(pointerHTML).join('') : '<p class="crock-empty">Nothing in the index points to or from this RFC. It stands on its own.</p>'}
-      <p class="crock-foot">Crock only points where the index does: what replaced, updates or sits alongside this RFC. Named for Steve Crocker, who wrote <a href="#/rfc/1">RFC 1</a> in 1969.</p>
+      ${rel.length ? rel.map(pointerHTML).join('') : '<p class="crock-empty" id="crock-empty">Nothing in the index points onward from it yet.</p>'}
+      <p class="crock-foot">Crock reads only the RFC index and this RFC's own references, and writes nothing inside the sheet. Named for Steve Crocker, who wrote <a href="#/rfc/1">RFC 1</a> in 1969.</p>
     </section>`;
 
   const line = lineage(r);
@@ -317,6 +335,7 @@ function renderBar(r) {
         <span class="docbar-body"><span class="docbar-over">${ERA_BY_KEY[r.era].name} era${also.length ? ` · ${also.join(' · ')}` : ''}</span><span class="docbar-title">${esc(r.title)}</span></span>
       </div>
       <span class="docbar-status ${glyphClass(r)}"><i class="glyph" aria-hidden="true"></i>${STATUS[r.status].label}${r.obsolete ? ', replaced' : ''}</span>
+      <button class="docbar-crock" type="button" aria-expanded="false" aria-controls="crockpanel" data-action="crock">${icon('compass')}<span>Crock</span></button>
       <button class="docbar-act" type="button" aria-expanded="false" aria-controls="tocpanel" data-action="toc"><span>Contents</span>${icon('chevron-down')}</button>
     </div>`;
 }
@@ -338,6 +357,7 @@ function renderToc(currentId) {
   if (list) list.innerHTML = tocHTML(cur.heads, currentId);
   if (!tocPanel.hidden) tocPanel.firstElementChild.innerHTML = tocHTML(cur.heads, currentId);
   cur.currentId = currentId;
+  renderHere(currentId);
   // keep the section being read visible inside the (scrollable) contents rail
   const box = $('.toc', viewEl);
   const el = box && $('.toc-item[aria-current="true"]', box);
@@ -352,10 +372,93 @@ function renderToc(currentId) {
 function toggleToc() {
   const btn = $('.docbar-act', barEl);
   if (!tocPanel.hidden) { closeToc(); return; }
+  closeCrock();
   tocPanel.firstElementChild.innerHTML = cur ? tocHTML(cur.heads, cur.currentId) : '';
   tocPanel.hidden = false;
   btn?.setAttribute('aria-expanded', 'true');
   $('[aria-current="true"]', tocPanel)?.scrollIntoView({ block: 'center' });
+}
+
+// ── Crock: does it still hold, and what does it stand on ─────────────
+function verdictHTML(r) {
+  const v = verdict(r);
+  const errata = r.errata ? ` <a class="crock-errata" href="https://www.rfc-editor.org/errata/rfc${r.n}" target="_blank" rel="noopener">Errata reported</a>.` : '';
+  return `<div class="crock-verdict" data-kind="${v.kind}"><span class="verdict-chip">${v.label}</span><p>${v.html}${errata}</p></div>`;
+}
+
+const secLabel = (h) => `${h.appendix ? `Appendix ${h.num}` : `§${h.num}`} ${tocTitle(h.title)}`;
+const standRows = (items, here) => items.map(([c, uses]) => pointerHTML({ rec: db.byN.get(c.n), why: citeNote(c, cur.rec, uses, here) })).join('');
+
+// “Cited here”: the RFCs the section on screen relies on, most-cited first
+function hereHTML(id) {
+  const s = cur?.stand;
+  if (!s) return `<p class="crock-sub">Cited here</p><p class="crock-none">${esc(cur?.standMissing || 'Reading its references…')}</p>`;
+  const h = id ? cur.heads.find((x) => x.id === id) : null;
+  const head = `<p class="crock-sub">Cited in ${h ? `<span class="crock-sec">${esc(secLabel(h))}</span>` : 'this part'}</p>`;
+  const counts = id ? s.here.get(id) : null;
+  if (!counts || !counts.size) return `${head}<p class="crock-none">This section cites no other RFCs.</p>`;
+  const rows = [...counts].sort((a, b) => b[1] - a[1] || a[0] - b[0]).map(([n, uses]) => [s.cites.get(n) || { n, kind: 'other' }, uses]);
+  return `${head}${standRows(rows.slice(0, 4), true)}${rows.length > 4 ? `<p class="crock-more">And ${rows.length - 4} more in this section.</p>` : ''}`;
+}
+
+// “Built on”: what the whole RFC leans on, normative references first, and how much has moved on since
+function builtHTML() {
+  const s = cur?.stand;
+  if (!s) return '';
+  const all = builtOn(s);
+  if (!all.length) return '';
+  const since = all.filter((c) => replacedSince(c.rec, cur.rec)).length;
+  const sum = `It cites ${all.length} ${all.length === 1 ? 'RFC' : 'RFCs'}.${since ? ` ${since} of them ${since === 1 ? 'has' : 'have'} been replaced since it came out.` : ''}`;
+  const rest = all.length > 4 ? `<details class="crock-all"><summary>All ${all.length} it cites</summary>${standRows(all.slice(4).map((c) => [c, c.uses]), false)}</details>` : '';
+  return `<p class="crock-sub">Built on</p>${standRows(all.slice(0, 4).map((c) => [c, c.uses]), false)}<p class="crock-more">${sum}</p>${rest}`;
+}
+
+// Once the text has arrived (or couldn't): the abstract, the count, what it's built on, what this part cites
+function renderStand(missing) {
+  if (!cur) return;
+  if (missing) cur.standMissing = missing;
+  const why = $('#crock-why', viewEl);
+  if (why && cur.abstract) {
+    why.innerHTML = `<p class="crock-k">In its own words</p><p class="crock-quote">“${esc(cur.abstract)}”</p>`;
+    why.hidden = false;
+  }
+  const count = $('#crock-cites', viewEl);
+  if (count) count.textContent = cur.stand ? (cur.stand.cites.size ? `${cur.stand.cites.size} ${cur.stand.cites.size === 1 ? 'RFC' : 'RFCs'}` : 'None') : '—';
+  const built = $('#crock-built', viewEl);
+  if (built) { built.innerHTML = builtHTML(); built.hidden = !cur.stand || !cur.stand.cites.size; }
+  const empty = $('#crock-empty', viewEl);
+  if (empty && cur.stand && !cur.stand.cites.size) empty.textContent = 'Nothing in the index points to or from this RFC, and it cites no other RFCs. It stands on its own.';
+  const hereEl = $('#crock-here', viewEl);
+  if (hereEl) hereEl.hidden = !!cur.stand && !cur.stand.cites.size; // nothing cited anywhere: no section list either
+  cur.hereKey = null;
+  renderHere(cur.currentId);
+}
+
+// Changes only when the section does, with a short fade rather than a jump
+function renderHere(id) {
+  if (!cur) return;
+  const key = `${id}|${cur.stand ? 'read' : cur.standMissing || 'wait'}`;
+  if (key === cur.hereKey) return;
+  cur.hereKey = key;
+  const html = hereHTML(id);
+  const quiet = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (const el of [$('#crock-here', viewEl), crockPanel.hidden ? null : $('.crock-here', crockPanel)]) {
+    if (!el) continue;
+    el.innerHTML = html;
+    if (!quiet && el.animate) el.animate([{ opacity: 0.2 }, { opacity: 1 }], { duration: 240, easing: 'cubic-bezier(0, 0, 0.2, 1)' });
+  }
+}
+
+function toggleCrock() {
+  const btn = $('.docbar-crock', barEl);
+  if (!crockPanel.hidden) { closeCrock(); return; }
+  tocPanel.hidden = true;
+  $('.docbar-act', barEl)?.setAttribute('aria-expanded', 'false');
+  crockPanel.firstElementChild.innerHTML = cur
+    ? `${verdictHTML(cur.rec)}<div class="crock-here">${hereHTML(cur.currentId)}</div><div class="crock-built">${builtHTML()}</div>`
+    : '';
+  crockPanel.hidden = false;
+  btn?.setAttribute('aria-expanded', 'true');
 }
 
 // ── Text ──────────────────────────────────────────────────────────────
@@ -365,6 +468,7 @@ async function loadText(rec) {
     body.innerHTML = `<div class="pt-msg"><p><b>RFC ${rec.n} was never typed up as plain text.</b> It survives as a scanned PDF, kept as it was.</p><a class="btn btn-outline btn-sm" href="${rfcUrl(rec, 'pdf')}" target="_blank" rel="noopener">Open the PDF${icon('arrow-up-right')}</a></div>`;
     $('#sheet-hash', viewEl).textContent = 'pdf only';
     $('.sheet-file', viewEl).textContent = `rfc${rec.n}.pdf`;
+    renderStand('It survives only as a scanned PDF, so Crock can’t read what it cites.');
     renderToc(null);
     return;
   }
@@ -383,6 +487,7 @@ async function loadText(rec) {
   } catch (err) {
     if (err.name === 'AbortError' || cur !== mine) return;
     body.innerHTML = `<div class="pt-msg"><p><b>We couldn’t load rfc${rec.n}.txt from rfc-editor.org.</b> Check your connection — or read it on the RFC Editor’s own site.</p><a class="btn btn-outline btn-sm" href="${rfcUrl(rec, 'txt')}" target="_blank" rel="noopener">Open the original${icon('arrow-up-right')}</a></div>`;
+    renderStand('The text didn’t load, so Crock can’t read what it cites yet.');
     renderToc(null);
   }
 }
@@ -435,6 +540,11 @@ function renderText(rec, { text, hash }) {
   let lastTop = 0;
   let inAppendix = false;
   const out = [];
+  // what each section cites: the front matter (boilerplate) and the references themselves don't count
+  const refs = readReferences(lines, rec.n);
+  const cites = refs ? refs.cites : new Map();
+  const here = new Map();
+  let sec = null;
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
     let pb = '';
@@ -444,9 +554,20 @@ function renderText(rec, { text, hash }) {
       seen.add(h.id);
       if (h.appendix) inAppendix = true; else lastTop = Number(h.id.split('.')[0]);
       heads.push(h);
+      sec = h.id;
       out.push(`${pb}<span class="pt-h" id="s-${h.id}">${esc(line)}</span>`);
     } else {
       out.push(pb + esc(line));
+    }
+    if (sec && (!refs || i < refs.start || i >= refs.end)) {
+      for (const n of citesIn(line, refs, rec.n)) {
+        let m = here.get(sec);
+        if (!m) here.set(sec, (m = new Map()));
+        m.set(n, (m.get(n) || 0) + 1);
+        let c = cites.get(n);
+        if (!c) cites.set(n, (c = { n, kind: 'other', uses: 0 }));
+        c.uses++;
+      }
     }
   }
   body.innerHTML = `<pre class="pt">${out.join('\n')}</pre>`;
@@ -454,6 +575,9 @@ function renderText(rec, { text, hash }) {
   if (hash) { hashEl.textContent = `sha-256 · ${hash.slice(0, 8)}…${hash.slice(-4)}`; hashEl.title = `SHA-256 of rfc${rec.n}.txt as fetched from rfc-editor.org: ${hash}`; }
   else hashEl.textContent = 'as fetched from rfc-editor.org';
   cur.heads = heads;
+  cur.stand = { cites, here };
+  cur.abstract = readAbstract(lines);
+  renderStand();
   measureHeads();
   renderToc(heads[0]?.id ?? null);
   if (cur.pendingSection) { const s = cur.pendingSection; cur.pendingSection = null; requestAnimationFrame(() => scrollToSection(s)); }
@@ -519,6 +643,7 @@ function onClick(e) {
     const a = t.dataset.action;
     if (a === 'to-top') { backToTop(); return; }
     if (a === 'toc') { e.preventDefault(); toggleToc(); return; }
+    if (a === 'crock') { e.preventDefault(); toggleCrock(); return; }
     if (a === 'fit') { setFit($('#sheet', viewEl).classList.contains('is-actual')); return; }
     if (a === 'cite') { copyCitation(cur.rec); return; }
     if (a === 'download') {
@@ -537,6 +662,7 @@ function onClick(e) {
     return;
   }
   if (!tocPanel.hidden && !e.target.closest('#tocpanel, .docbar-act')) closeToc();
+  if (!crockPanel.hidden && !e.target.closest('#crockpanel, .docbar-crock')) closeCrock();
 }
 
 async function copyCitation(r) {
