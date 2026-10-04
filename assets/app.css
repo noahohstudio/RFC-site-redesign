@@ -498,12 +498,33 @@ body.legend-hidden .legend-link { display: flex; }
 /* ── The shelves ──────────────────────────────────────────────────── */
 .list { container-type: inline-size; container-name: list; }
 .yr { position: relative; }
-/* a year's head: a band that rides along as a running head (the big year lives in the left rail) */
+/* a year's head: a band that rides along as a running head (the big year lives in the left rail). It keeps the
+   rows' columns: the count sits against the status column's line, and once the head is pinned under the header,
+   that column offers the way back to the top, its arrow over the status glyphs */
 .yr-head {
   position: sticky; top: var(--size-row); z-index: 5;
-  display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 24px;
+  display: flex; align-items: center; height: 44px; padding-left: 24px;
   background: var(--color-bg-subtle); border-bottom: 1px solid var(--color-border-default);
 }
+.yr-head::after {
+  content: ""; position: absolute; top: 0; bottom: 0; right: calc(var(--yr-side) - 1px); width: 1px;
+  background: var(--color-border-default); pointer-events: none;
+}
+.yr { --yr-side: 216px; } /* the status column's width */
+.yr-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding-right: 20px; }
+.yr-top {
+  align-self: stretch; flex: none; width: var(--yr-side); display: flex; align-items: center; gap: 9px; padding: 0 20px;
+  font: 400 12px/16px var(--font-sans); color: var(--color-text-muted);
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard), visibility 0s linear var(--motion-duration-base), color var(--motion-duration-base) var(--motion-ease-standard);
+}
+.yr-top .icon { width: 14px; height: 14px; color: currentColor; }
+.yr.is-stuck .yr-top { opacity: 1; visibility: visible; transition-delay: 0s; }
+.yr-top:hover { color: var(--color-text-primary); transition-duration: var(--motion-duration-fast); }
+.yr-top:focus-visible { outline-offset: -4px; }
+.list[data-mode="medium"] .yr { --yr-side: 56px; }
+.list[data-mode="medium"] .yr-top { justify-content: center; padding: 0; }
+.list[data-mode="medium"] .yr-top span { display: none; }
 .yr-num { font: 500 16px/20px var(--font-mono); color: var(--color-text-primary); }
 .yr-era { font: 500 14px/18px var(--font-sans); color: var(--era-text); }
 .yr-count { margin-left: auto; font: 400 12px/16px var(--font-sans); color: var(--color-text-muted); white-space: nowrap; }
@@ -633,6 +654,14 @@ body.legend-hidden .legend-link { display: flex; }
 .scrub-track { position: relative; flex: 1; height: 28px; display: flex; align-items: flex-end; gap: 1px; touch-action: none; cursor: pointer; }
 .scrub-track i { flex: 1; min-width: 1px; background: var(--era-accent); }
 .scrub-win { position: absolute; top: -4px; bottom: -4px; border: 1.5px solid var(--color-border-strong); pointer-events: none; }
+/* phones: the year heads don't stick, so the bar that does carries the way back to the top, in the column
+   the menu cell above and the rows' status cells below share */
+.scrub-top {
+  align-self: stretch; flex: none; width: 56px; margin-right: -16px; display: grid; place-items: center;
+  border-left: 1px solid var(--color-border-default); color: var(--color-icon-muted);
+}
+.scrub-top .icon { width: 18px; height: 18px; color: currentColor; }
+.scrub-top:active { color: var(--color-icon-primary); }
 
 /* ── An RFC page: the same frame — contents · the document · Crock ── */
 .doc-shell { grid-template-columns: var(--size-rail) minmax(0, 1fr) var(--size-aside); }
@@ -1083,6 +1112,8 @@ html.is-locked { overflow: hidden; }
   .legend { display: none; }
   .legend-link { display: flex; padding: 12px 16px; }
   .yr-head { position: static; padding: 0 16px; }
+  .yr-head::after, .yr-top { display: none; }
+  .yr-title { padding-right: 0; }
   .era-div { grid-template-columns: minmax(0, 1fr); }
   .era-div-body { padding: 20px 16px 12px; }
   .era-div-chart { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--era-accent) 30%, transparent); padding: 12px 16px 16px; }

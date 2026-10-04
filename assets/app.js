@@ -148,7 +148,7 @@ function onClick(e) {
       case 'filters': index.openFilters(); break;
       case 'hide-legend': index.hideLegend(true); break;
       case 'reset-filters': index.resetFilters(); break;
-      case 'to-page-top': window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); break;
+      case 'to-page-top': backToTop(); break;
       case 'close': ui.closeDialog(t.closest('dialog')); break;
       default: break;
     }
@@ -160,6 +160,12 @@ function onClick(e) {
     // clicking a link to the page you're on still re-runs it (e.g. jump to an era twice)
     if (link.getAttribute('href') === (location.hash || '#/')) { e.preventDefault(); route(); }
   }
+}
+
+// The index skips most of a long way up and glides the rest; elsewhere the page just glides.
+function backToTop() {
+  if (view === 'index') { index.backToTop(); return; }
+  window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 
 function onKey(e) {

@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>RFC Editor — redesign concept</title>
   <meta name="description" content="An unofficial redesign concept for the RFC Editor: all 9,842 RFCs, newest first, searchable from the official RFC index. Each RFC is shown exactly as published.">
-  <meta name="build" content="20261004-1510">
+  <meta name="build" content="20261004-1518">
   <meta name="theme-color" content="#fbf7f0">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-  <link rel="preload" href="data/rfc-index.json?v=20261004-1510" as="fetch" type="application/json" crossorigin>
-  <link rel="stylesheet" href="assets/tokens.css?v=20261004-1510">
-  <link rel="stylesheet" href="assets/glyphs.css?v=20261004-1510">
-  <link rel="stylesheet" href="assets/app.css?v=20261004-1510">
+  <link rel="preload" href="data/rfc-index.json?v=20261004-1518" as="fetch" type="application/json" crossorigin>
+  <link rel="stylesheet" href="assets/tokens.css?v=20261004-1518">
+  <link rel="stylesheet" href="assets/glyphs.css?v=20261004-1518">
+  <link rel="stylesheet" href="assets/app.css?v=20261004-1518">
   <script>
     (function () {
       try {
@@ -24,8 +24,8 @@
       } catch (e) {}
     })();
   </script>
-  <script type="importmap">{"imports":{"./assets/app.js":"./assets/app.js?v=20261004-1510","./assets/data.js":"./assets/data.js?v=20261004-1510","./assets/docview.js":"./assets/docview.js?v=20261004-1510","./assets/indexview.js":"./assets/indexview.js?v=20261004-1510","./assets/menus.js":"./assets/menus.js?v=20261004-1510","./assets/perf.js":"./assets/perf.js?v=20261004-1510","./assets/search.js":"./assets/search.js?v=20261004-1510","./assets/searchui.js":"./assets/searchui.js?v=20261004-1510","./assets/timeline.js":"./assets/timeline.js?v=20261004-1510","./assets/ui.js":"./assets/ui.js?v=20261004-1510"}}</script>
-  <script type="module" src="assets/app.js?v=20261004-1510"></script>
+  <script type="importmap">{"imports":{"./assets/app.js":"./assets/app.js?v=20261004-1518","./assets/data.js":"./assets/data.js?v=20261004-1518","./assets/docview.js":"./assets/docview.js?v=20261004-1518","./assets/indexview.js":"./assets/indexview.js?v=20261004-1518","./assets/menus.js":"./assets/menus.js?v=20261004-1518","./assets/perf.js":"./assets/perf.js?v=20261004-1518","./assets/search.js":"./assets/search.js?v=20261004-1518","./assets/searchui.js":"./assets/searchui.js?v=20261004-1518","./assets/timeline.js":"./assets/timeline.js?v=20261004-1518","./assets/ui.js":"./assets/ui.js?v=20261004-1518"}}</script>
+  <script type="module" src="assets/app.js?v=20261004-1518"></script>
 </head>
 <body>
 <!-- sprite:start -->
@@ -136,6 +136,7 @@
 <div class="scrub" id="scrub" aria-hidden="true">
   <div class="scrub-now"><span class="era-dot"></span><span class="scrub-year">2026</span><span class="scrub-era">Present</span></div>
   <div class="scrub-track" id="scrub-track" role="slider" tabindex="-1" aria-label="Walk through time"></div>
+  <button class="scrub-top" type="button" data-action="to-page-top" tabindex="-1" aria-label="Back to top"><svg class="icon" data-i="arrow-up" aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
 </div>
 
 <div class="docbar" id="docbar" hidden></div>

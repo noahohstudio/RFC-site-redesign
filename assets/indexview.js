@@ -312,7 +312,7 @@ function makeSection(y, recs) {
   el.dataset.era = y.era;
   el.id = `y${y.year}`;
   el.setAttribute('aria-labelledby', `yh${y.year}`);
-  el.innerHTML = `<h2 class="yr-head" id="yh${y.year}"><span class="era-dot" aria-hidden="true"></span><span class="yr-num">${y.year}</span><span class="yr-era">${ERA_BY_KEY[y.era].name}</span><span class="yr-count">${countLabel(y, recs.length)}</span></h2><div class="yr-rows"></div>`;
+  el.innerHTML = `<div class="yr-head"><h2 class="yr-title" id="yh${y.year}"><span class="era-dot" aria-hidden="true"></span><span class="yr-num">${y.year}</span><span class="yr-era">${ERA_BY_KEY[y.era].name}</span><span class="yr-count">${countLabel(y, recs.length)}</span></h2><button class="yr-top" type="button" data-action="to-page-top" aria-label="Back to top">${icon('arrow-up')}<span>Back to top</span></button></div><div class="yr-rows"></div>`;
   // h: each row's height (estimated until it has been on screen, then measured);
   // off: running totals, so off[k] is row k's top within the year; [from, to) is what's built
   const n = recs.length;
@@ -765,6 +765,24 @@ function onScroll() {
 let focusEra = 'present';
 function currentEra() { return focusEra; }
 
+// Only the year head pinned under the header offers the way back to the top; the ones passing by don't.
+let stuckSec = null;
+function markStuck(sec) {
+  if (sec === stuckSec) return;
+  stuckSec?.el.classList.remove('is-stuck');
+  sec?.el.classList.add('is-stuck');
+  stuckSec = sec;
+}
+
+// Back to the top from deep in the archive: skip most of the way at once and build the rows there,
+// so the glide that follows covers a couple of screens rather than racing past thousands of rows.
+export function backToTop() {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const glide = window.innerHeight * 2;
+  if (!reduce && window.scrollY > glide) { window.scrollTo(0, glide); updateCurrent(true); }
+  window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+}
+
 function updateCurrent(force) {
   if (!state.visible || !state.sections.length) return;
   renderWindow();
@@ -778,6 +796,7 @@ function updateCurrent(force) {
   let last = null;
   let era = null;
   let topSec = null;
+  let topTop = 0;
   let reading = null; // the year you're reading: the first one showing more than a sliver
   for (const s of state.sections) {
     const r = s.el.getBoundingClientRect();
@@ -785,13 +804,15 @@ function updateCurrent(force) {
     if (reading === null && r.bottom > top + 48) reading = s.year;
     if (r.bottom <= top) continue;
     if (r.top >= bottom) break;
-    if (first === null) { first = s.year; topSec = s; }
+    if (first === null) { first = s.year; topSec = s; topTop = r.top; }
     last = s.year;
   }
   const st = stickyTop();
-  state.anchor = listEl.getBoundingClientRect().top < st && topSec
+  const inList = listEl.getBoundingClientRect().top < st;
+  state.anchor = inList && topSec
     ? (topRow(topSec, st) || { year: topSec.year, n: null, offset: 0 })
     : null;
+  markStuck(inList && topSec && topTop <= st + 1 ? topSec : null);
   if (first === null) {
     const lastSec = state.sections[state.sections.length - 1];
     first = last = lastSec.el.getBoundingClientRect().bottom <= top ? lastSec.year : state.sections[0].year;
