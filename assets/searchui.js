@@ -1,5 +1,5 @@
-// Search UI: the dropdown under the centred nav field (≥768) and a full-screen
-// overlay on phones. Keyboard-first: ⌘K or / from anywhere, ↑↓ to move, ↵ to open.
+// Search UI: the header's own field with its dropdown (≥1024) and a full-screen
+// overlay on tablets and phones. Keyboard-first: ⌘K or / from anywhere, ↑↓ to move, ↵ to open.
 import { db, ERA_BY_KEY, STATUS, esc, fmtInt } from './data.js';
 import { search } from './search.js';
 import { $, $$, icon, mqPhone, mqTablet, store, openDialog, closeDialog, closeMenus, edgeFade } from './ui.js';
@@ -23,10 +23,19 @@ export function init() {
   const root = $('#search');
   const input = $('#search-input');
   const clear = $('.search-clear', root);
-  input.addEventListener('focus', () => openDesk());
+  fitPrompt(input);
+  input.addEventListener('focus', () => {
+    if (mqTablet.matches) { input.blur(); openMobile(); return; } // smaller screens: the whole screen
+    openDesk();
+  });
   input.addEventListener('input', () => { clear.hidden = !input.value; openDesk(); desk.render(); });
   input.addEventListener('keydown', (e) => desk.key(e, closeDesk));
   clear.addEventListener('click', () => { input.value = ''; clear.hidden = true; input.focus(); desk.render(); });
+  root.addEventListener('click', (e) => {
+    if (!mqTablet.matches || e.target.closest('button')) return;
+    e.preventDefault(); // the label would focus the field
+    openMobile();
+  });
   root.addEventListener('focusout', (e) => { if (!root.contains(e.relatedTarget)) closeDesk(); });
   document.addEventListener('pointerdown', (e) => { if (!root.contains(e.target)) closeDesk(); });
   document.addEventListener('menu-open', closeDesk);
@@ -54,6 +63,20 @@ export function init() {
     });
   }
   mqTablet.addEventListener('change', () => { closeDesk(); closeDialog($('#dlg-search')); });
+}
+
+// The prompt says as much as fits: the whole hint where there's room, just the count where there isn't.
+function fitPrompt(input) {
+  const full = input.placeholder;
+  const short = full.split(':')[0];
+  const ctx = document.createElement('canvas').getContext('2d');
+  const fit = () => {
+    ctx.font = getComputedStyle(input).font;
+    const next = ctx.measureText(full).width <= input.clientWidth ? full : short;
+    if (input.placeholder !== next) input.placeholder = next;
+  };
+  new ResizeObserver(fit).observe(input);
+  document.fonts?.ready.then(fit);
 }
 
 // On desktop the header itself becomes the field, from Browse to About; on smaller screens search takes the whole screen.
@@ -86,6 +109,7 @@ function openDesk() {
   const pop = $('#search-pop');
   if (!pop.hidden) return;
   closeMenus();
+  $('#nav').classList.add('is-searching'); // the menus fold away and the field runs Browse to About
   pop.hidden = false;
   $('#search').classList.add('is-open');
   document.body.classList.add('search-open');

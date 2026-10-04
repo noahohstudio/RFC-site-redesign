@@ -104,15 +104,8 @@
         <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-browse" data-menu="browse">Browse<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
         <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-learn" data-menu="learn">Learn<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
       </nav>
-      <!-- the lens: its dot carries the colour of the era you're reading -->
-      <button class="nav-cell nav-lens" type="button" data-action="search" aria-label="Search the archive (⌘K)" title="Search  ⌘K">
-        <svg class="search-glass" viewBox="0 0 32 32" aria-hidden="true"><circle class="glass-lens" cx="13.5" cy="13.5" r="8.25"/><path class="glass-handle" d="M19.6 19.6L26.5 26.5"/><circle class="glass-dot" cx="13.5" cy="13.5" r="3.25"/></svg>
-      </button>
-      <nav class="nav-groups nav-groups-end" aria-label="More">
-        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-contribute" data-menu="contribute">Contribute<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
-        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-about" data-menu="about">About<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
-      </nav>
-
+      <!-- the search fills the span between the menus; opening it folds the menus away so it runs Browse to About.
+           Its lens dot carries the colour of the era you're reading. -->
       <div class="search" id="search" role="search">
         <label class="search-field" for="search-input">
           <svg class="search-glass" viewBox="0 0 32 32" aria-hidden="true"><circle class="glass-lens" cx="13.5" cy="13.5" r="8.25"/><path class="glass-handle" d="M19.6 19.6L26.5 26.5"/><circle class="glass-dot" cx="13.5" cy="13.5" r="3.25"/></svg>
@@ -121,12 +114,17 @@
                  role="combobox" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list"
                  aria-label="Search the archive">
           <button class="search-clear" type="button" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
-          <button class="search-esc" type="button" data-action="search-close" aria-label="Close search">Esc</button>
+          <span class="search-keys"><kbd class="kbd search-kbd" aria-hidden="true">⌘K</kbd><button class="kbd search-esc" type="button" data-action="search-close" aria-label="Close search">Esc</button></span>
         </label>
         <div class="search-pop" id="search-pop" hidden><div class="pop-scroll"></div></div>
       </div>
+      <nav class="nav-groups nav-groups-end" aria-label="More">
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-contribute" data-menu="contribute">Contribute<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="mega-about" data-menu="about">About<svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      </nav>
     </div>
 
+    <button class="nav-cell nav-lens" type="button" data-action="search" aria-label="Search the archive"><svg class="search-glass" viewBox="0 0 32 32" aria-hidden="true"><circle class="glass-lens" cx="13.5" cy="13.5" r="8.25"/><path class="glass-handle" d="M19.6 19.6L26.5 26.5"/><circle class="glass-dot" cx="13.5" cy="13.5" r="3.25"/></svg></button>
     <button class="nav-cell nav-menu-btn" type="button" data-action="menu" aria-label="Menu"><span class="nav-menu-label">Menu</span><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
     <button class="nav-cell nav-theme" type="button" data-action="theme" aria-label="Switch to dark mode"><svg class="icon" aria-hidden="true"><use href="#i-contrast"/></svg></button>
   </div>

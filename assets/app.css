@@ -117,6 +117,7 @@ kbd { font: inherit; }
 
 /* ── Header: one row of cells on the frame ────────────────────────── */
 .nav {
+  --nav-menu-cell: calc((var(--size-aside) - var(--size-map)) / 2);
   position: sticky; top: 0; z-index: 50; height: var(--size-row);
   background: var(--color-bg-canvas); border-bottom: 1px solid var(--color-border-default);
 }
@@ -131,13 +132,13 @@ kbd { font: inherit; }
 .nav-brand:hover { background: var(--color-bg-subtle); }
 .nav-groups { display: flex; flex: none; }
 .nav-trigger {
-  position: relative; display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 20px;
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; flex: none;
+  width: var(--nav-menu-cell); height: 100%; padding: 0 8px;
   border-right: 1px solid var(--color-border-default);
   font: 500 16px/20px var(--font-sans); color: var(--color-text-secondary); white-space: nowrap;
 }
+/* four equal menu cells; Contribute · About · theme together are exactly an RFC page's right column, so the page's line meets the header's */
 .nav-groups-end .nav-trigger { border-right: 0; border-left: 1px solid var(--color-border-default); }
-/* Contribute · About · theme together are exactly an RFC page's right column, so the page's line meets the header's */
-.nav-groups-end .nav-trigger { width: calc((var(--size-aside) - var(--size-map)) / 2); justify-content: center; padding: 0 8px; }
 .nav-cell.nav-theme { width: calc(var(--size-map) + 1px); }
 .nav-trigger .icon { width: 16px; height: 16px; color: var(--color-icon-muted); transition: transform var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard); }
 .nav-trigger:hover { color: var(--color-text-primary); background: var(--color-bg-subtle); }
@@ -157,43 +158,69 @@ kbd { font: inherit; }
 .nav-cell:hover { background: var(--color-bg-subtle); color: var(--color-text-primary); }
 .nav-cell:focus-visible { outline-offset: -4px; }
 .nav-menu-btn { display: none; }
-/* Browse to About: one span, so the search can take it over and leave the logo cell and the theme cell in place */
-.nav-mid { position: relative; flex: 1; min-width: 0; display: flex; align-items: stretch; }
-.nav-mid > :not(.search) { transition: opacity var(--motion-duration-base) var(--motion-ease-standard); }
-.nav-lens { margin-inline: auto; border-right: 1px solid var(--color-border-default); }
-.nav-lens .search-glass { width: 28px; height: 28px; }
 .nav-menu-btn { width: auto; grid-auto-flow: column; gap: 8px; padding: 0 16px 0 20px; font: 500 16px/20px var(--font-sans); }
+.nav-lens { display: none; }
+.nav-lens .search-glass { width: 28px; height: 28px; }
+/* Browse to About: one span. The search fills whatever the menus leave; opening it slides the menus away under
+   the logo cell and the theme cell, so the field runs the whole span while those two cells stay put */
+.nav-mid { position: relative; flex: 1; min-width: 0; display: flex; align-items: stretch; }
+.nav-mid > .nav-groups {
+  width: calc(var(--nav-menu-cell) * 2); overflow-x: clip; /* clip the sides only: an open menu's ink edge still meets the line below */
+  transition: width var(--motion-duration-slow) var(--motion-ease-standard), opacity var(--motion-duration-base) var(--motion-ease-standard) 120ms;
+}
+.nav-mid > .nav-groups:not(.nav-groups-end) { justify-content: flex-end; } /* Browse and Learn leave to the left, under the logo */
+.nav.is-searching .nav-mid > .nav-groups {
+  width: 0; opacity: 0; pointer-events: none;
+  transition: width var(--motion-duration-slow) var(--motion-ease-standard), opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
 
-/* ── Search: the header becomes the field ────────────────────────────
-   At rest it's a lens cell in the middle of the header, its dot in the colour of the era you're reading.
-   Opening it (a click, ⌘K or /) fades Browse to About away and that whole span becomes one field, in the
-   header's own colour with no box of its own; the logo cell and the theme cell stay. Phones and tablets
-   get the whole screen instead. */
+/* ── Search: the header's empty span is the field ─────────────────────
+   No box and no cell of its own: at rest the field simply fills the space between the menus, in the header's colour,
+   with the lens (its dot in the colour of the era you're reading), the prompt and ⌘K. Opening it (a click, ⌘K or /)
+   slides the menus away, so the field runs Browse to About and the results hang from it. Tablets open the
+   full-screen search from the same field; phones keep a lens cell. */
 .search-glass { width: 28px; height: 28px; flex: none; }
 .glass-lens, .glass-handle { fill: none; stroke: var(--color-icon-primary); stroke-width: 2; stroke-linecap: square; }
-.glass-dot { fill: var(--era-accent, var(--color-icon-muted)); transition: fill var(--motion-duration-slow) var(--motion-ease-standard); }
-.search {
-  position: absolute; inset: 0; z-index: 2;
-  opacity: 0; visibility: hidden;
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard), visibility 0s linear var(--motion-duration-base);
+.glass-dot {
+  fill: var(--era-accent, var(--color-icon-muted)); transform-box: fill-box; transform-origin: center;
+  transition: fill var(--motion-duration-slow) var(--motion-ease-standard), transform var(--motion-duration-base) var(--motion-ease-standard);
 }
-.nav.is-searching .search { opacity: 1; visibility: visible; transition: opacity var(--motion-duration-base) var(--motion-ease-enter) 60ms, visibility 0s; }
-.nav.is-searching .nav-mid > :not(.search) { opacity: 0; pointer-events: none; }
+.search { flex: 1; min-width: 0; display: flex; }
 .search .search-field {
-  display: flex; align-items: center; gap: 16px; width: 100%; height: 100%; padding: 0 16px 0 24px;
+  position: relative; display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; height: 100%; padding: 0 16px 0 20px;
   background: var(--color-bg-canvas); cursor: text;
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard);
 }
+.nav:not(.is-searching) .search .search-field:hover { background: var(--color-bg-subtle); }
+/* the lens's dot grows on hover and stays grown while you search */
+.search .search-field:hover .glass-dot, .nav.is-searching .search .glass-dot { transform: scale(1.3); }
+/* open, the field is marked the way an open menu's cell is: an ink edge along the bottom */
+.search .search-field::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--color-border-strong);
+  transform: scaleX(0); transition: transform var(--motion-duration-slow) var(--motion-ease-standard);
+}
+.nav.is-searching .search .search-field::after { transform: scaleX(1); }
 .search-input {
   flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; padding: 0;
-  font: 400 18px/24px var(--font-sans); color: var(--color-text-primary);
+  font: 400 16px/24px var(--font-sans); color: var(--color-text-primary); text-overflow: ellipsis;
 }
 .search-input:focus-visible { outline: none; }
-.search-input::placeholder { color: var(--color-text-muted); opacity: 1; }
+.search-input::placeholder { color: var(--color-text-muted); opacity: 1; transition: color var(--motion-duration-base) var(--motion-ease-standard); }
+.search .search-field:hover .search-input::placeholder { color: var(--color-text-secondary); }
 .search-input::-webkit-search-cancel-button { display: none; }
 .search-clear { width: 32px; height: 32px; display: grid; place-items: center; flex: none; }
 .search-clear .icon { width: 18px; height: 18px; color: var(--color-icon-muted); }
-.search-esc { flex: none; padding: 4px 8px; font: 500 12px/16px var(--font-sans); color: var(--color-text-muted); }
-.search-esc:hover { color: var(--color-text-primary); }
+/* the key that does something now: ⌘K at rest, Esc once the field is open */
+.search .search-keys { display: grid; flex: none; overflow: visible; } /* not the phone field's stretching label */
+.search-keys > * {
+  grid-area: 1 / 1; justify-self: end;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard), visibility 0s linear var(--motion-duration-base),
+    color var(--motion-duration-base) var(--motion-ease-standard), border-color var(--motion-duration-base) var(--motion-ease-standard);
+}
+.search-esc { opacity: 0; visibility: hidden; cursor: pointer; }
+.search-esc:hover { color: var(--color-text-primary); border-color: var(--color-border-strong); }
+.nav.is-searching .search-kbd { opacity: 0; visibility: hidden; }
+.nav.is-searching .search-esc { opacity: 1; visibility: visible; transition-delay: 0s; }
 /* a plain field: the phone search overlay and the bar under the phone header */
 .search-field.is-focused, .m-search-field {
   display: flex; align-items: center; gap: 8px; width: 100%; height: 44px; padding: 0 12px;
@@ -206,7 +233,7 @@ kbd { font: inherit; }
 
 /* the results hang from the field, across the same span: attached, lift 1, with a head band and a foot band */
 .search-pop {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 60;
+  position: absolute; top: 100%; left: -1px; right: -1px; z-index: 60; /* its sides sit on the logo's and the theme's lines */
   background: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-top: 0;
   box-shadow: var(--lift-1);
   max-height: min(calc(100vh - 96px), 600px); overflow: hidden; display: flex; flex-direction: column;
@@ -994,8 +1021,9 @@ html.is-locked { overflow: hidden; }
 @media (max-width: 1023px) {
   .nav-groups { display: none; }
   .nav-menu-btn { display: grid; }
-  .search { display: none; }
-  .nav-lens { border-left: 1px solid var(--color-border-default); }
+  /* the field stays, and opens the full-screen search */
+  .search .search-field { cursor: pointer; }
+  .search-input { pointer-events: none; }
   .shell { grid-template-columns: minmax(0, 1fr) var(--size-map); }
   .doc-shell { grid-template-columns: minmax(0, 1fr); }
   .doc-shell .center { border-right: 0; }
@@ -1018,7 +1046,8 @@ html.is-locked { overflow: hidden; }
   .nav-inner { border-inline: 0; }
   .nav-brand { padding: 0 16px; border-right: 0; }
   .nav-theme { display: none; }
-  .nav-lens { width: 56px; margin: 0 0 0 auto; border-right: 0; }
+  .search { display: none; }
+  .nav-lens { display: grid; width: 56px; }
   .nav-menu-btn { width: 56px; padding: 0; }
   .nav-menu-label { display: none; }
   .scrim, .mega { display: none !important; }
