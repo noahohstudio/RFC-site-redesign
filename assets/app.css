@@ -888,7 +888,6 @@ a.lin-step:hover .lin-title { color: var(--color-text-primary); text-decoration-
   display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 12px;
   background: var(--color-bg-surface); border: 1px solid var(--color-border-default); box-shadow: var(--lift-1);
   font: 500 14px/18px var(--font-sans); color: var(--color-text-secondary);
-  translate: 0 calc(-1 * var(--lift, 0px));
   opacity: 0; transform: translateY(8px); visibility: hidden; pointer-events: none;
   transition: opacity var(--motion-duration-base) var(--motion-ease-standard), transform var(--motion-duration-base) var(--motion-ease-standard),
     visibility var(--motion-duration-base), color var(--motion-duration-base) var(--motion-ease-standard), border-color var(--motion-duration-base) var(--motion-ease-standard);

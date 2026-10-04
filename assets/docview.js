@@ -15,12 +15,10 @@ let viewEl;
 let barEl;
 let tocPanel;
 let toTop;
-let footerEl;
 
 export function init() {
   viewEl = $('#view-doc');
   barEl = $('#docbar');
-  footerEl = $('footer');
   toTop = document.createElement('button');
   toTop.type = 'button';
   toTop.className = 'to-top';
@@ -495,12 +493,14 @@ function setFit(fit) {
 }
 
 // ── Back to top ───────────────────────────────────────────────────────
-// Shows once the reader is well into an RFC; at the end of the page it rides up with
-// the footer instead of covering it.
+// Shows once the reader is well into an RFC, and only while it sits over the document:
+// the moment anything below the sheet reaches it, it fades away the way it came, rather
+// than chasing the footer up the screen. Scrolling back into the RFC brings it back.
 function placeToTop() {
-  toTop.classList.toggle('is-on', window.scrollY > window.innerHeight * 1.5);
-  const lift = Math.max(0, window.innerHeight - footerEl.getBoundingClientRect().top);
-  toTop.style.setProperty('--lift', `${Math.round(lift)}px`);
+  const sheet = $('#sheet', viewEl);
+  const edge = toTop.offsetTop + toTop.offsetHeight; // its bottom edge on screen, ignoring its fade offset
+  const inDoc = !!sheet && sheet.getBoundingClientRect().bottom > edge;
+  toTop.classList.toggle('is-on', inDoc && window.scrollY > window.innerHeight * 1.5);
 }
 // A long RFC runs to hundreds of screens: skip most of the way at once, then glide the rest.
 function backToTop() {
