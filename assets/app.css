@@ -825,7 +825,6 @@ a.lin-step:hover .lin-node { transform: scale(1.25); }
 .lin-status { font: 400 12px/16px var(--font-sans); color: var(--era-text); }
 a.lin-step .lin-title { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: transparent; }
 a.lin-step:hover .lin-title { color: var(--color-text-primary); text-decoration-color: currentColor; }
-.lin-more { padding: 0 0 12px 28px; font: 400 12px/16px var(--font-sans); color: var(--color-text-muted); }
 
 .actions { display: flex; flex-direction: column; border-bottom: 1px solid var(--color-border-default); }
 .action-row {

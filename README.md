@@ -1,6 +1,6 @@
 # RFC Editor redesign — responsive prototype
 
-An unofficial, hi-fi prototype of the RFC Editor redesign (Figma file `d4ODFIKoRq0pxCiRKuAPNm`, design system v0.3).
+An unofficial, hi-fi prototype of the RFC Editor redesign (design system v1.0, “Ledger, warm”; Figma file `d4ODFIKoRq0pxCiRKuAPNm`).
 It runs on the real RFC index — all 9,842 RFCs as of 24 September 2026 — and shows every RFC exactly as published,
 fetched live from rfc-editor.org. No build step, no framework, no AI model.
 
@@ -63,23 +63,26 @@ python3 tools/build-assets.py              # only if icons or status glyphs chan
 | Ask Crock | The archivist, named for Steve Crocker, who wrote RFC 1. Its pointers are built only from relations recorded in the index: what replaced an RFC, what updates it, what was published alongside it (same working group and month), and its STD/BCP siblings. It shows up on RFC pages, and in search as questions the index can answer (“What replaced RFC 2616?”) |
 | Crock’s notes | For 62 well-known RFCs, a short plain-language note above the sheet: why it was written and where it made a difference (`data/notes.json`). The notes are drafts written with AI assistance for this prototype, labelled as such, and need an editor’s review. Every other RFC gets a friendly line built from the index in the Crock panel |
 | Lineage | Obsoletes / obsoleted-by chains (e.g. 2068 → 2616 → 7231 → 9110) |
-| Timeline | “Year by year”: a dot for every 20 RFCs, from real per-year counts (1968–2026, peak 459 in 2006); dots a filter hides go faint |
+| Minimap | Year by year from real per-year counts (1968–2026, peak 459 in 2006): equal dots in era colours, each worth the same number of RFCs (the key says how many); dots a filter hides go faint |
 
 Links in the Learn, Contribute and About menus go to the real pages on rfc-editor.org and ietf.org, or to RFCs inside the prototype
 (RFC 1, 2119, 7322, 9920).
 
 ## Breakpoints
 
+One hairline frame, up to 1440 wide, is shared by the header, the page and the footer.
+
 | Width | Layout |
 |---|---|
-| ≥ 1200 | Three columns: margins 40 · rail 216 · gutter 64 · centre 800 · gutter 64 · rail 216 |
-| 1024–1199 | Filters move into a drawer (the “Filters” chip), era chips appear, the timeline becomes a slim minimap |
-| 768–1023 | One column with a timeline strip; Browse/Learn/Contribute/About move into the Menu sheet |
-| < 768 | Search first, swipeable era chips, compact rows (number joins the meta line), filters in a bottom sheet, a horizontal era scrubber under the nav, full-screen search |
+| ≥ 1200 | Left rail 280 (where you are, eras, kinds of RFC) · the shelves · a 64px minimap. The header's search fills the span between the menus |
+| 1024–1199 | The rail folds into a Filters drawer and era chips; the minimap stays |
+| 768–1023 | Browse/Learn/Contribute/About move into the Menu sheet; the header's field opens a full-screen search |
+| < 768 | A search bar under the header, compact rows (the number joins the detail line), filters in a bottom sheet, and an era scrubber under the nav with Back to top |
 
-Document pages use the Figma document grid (rails 272 · centre 752). Below 1200px the contents list moves into the sticky
-document bar’s “Contents” menu, and below 1024px the facts, lineage and Ask Crock move under the sheet. The RFC text is never
-reflowed: its 72 columns scale to fit a narrow sheet, and on phones “Actual size” keeps 14px and scrolls sideways.
+RFC pages use contents 280 · the document · an aside 320 (facts and Ask Crock); the header's Contribute, About and theme
+cells span exactly that aside. Below 1200px the contents move into the sticky document bar's “Contents” menu, and below
+1024px the facts, lineage and Ask Crock move under the sheet. The RFC text is never reflowed: its 72 columns scale to fit
+a narrow sheet, and on phones “Actual size” keeps 14px and scrolls sideways.
 
 ## Keyboard
 
@@ -95,10 +98,12 @@ assets/app.css      components and breakpoints
 assets/app.js       boot + hash router (#/rfc/9110, #/year/1999, #/era/web, #/search/email, #/kind/B, #/stream/IRTF, #/errata)
 assets/data.js      index model, formatting, lineage, related list, citations
 assets/search.js    ranking
-assets/searchui.js  dropdown (≥768) and full-screen search (phones)
-assets/indexview.js the landing index, filters, timeline, era scrubber
-assets/timeline.js  the right-rail timeline (dots, year by year)
+assets/searchui.js  the header's search field and results (≥1024), full-screen search (tablets and phones)
+assets/indexview.js the landing index: left rail, shelves, filters, era scrubber
+assets/timeline.js  the minimap (equal dots, year by year)
 assets/docview.js   RFC pages
-assets/ui.js        theme, menus, sheets, toasts
+assets/menus.js     what's inside the Browse, Learn, Contribute and About menus
+assets/ui.js        theme, menus, sheets, edge fades
+assets/perf.js      the ?perf frame meter
 tools/              data + asset build scripts
 ```
