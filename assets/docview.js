@@ -72,6 +72,7 @@ export function show(n, section) {
   document.title = `RFC ${rec.n}: ${rec.title} — RFC Editor (redesign concept)`;
   viewEl.innerHTML = pageHTML(rec);
   edgeFade($('.toc', viewEl));
+  edgeFade($('.about-rail > .about', viewEl)); // the aside scrolls inside itself when it's taller than the screen
   edgeFade($('#sheet-body', viewEl), 'x');
   renderBar(rec);
   setFit(true);

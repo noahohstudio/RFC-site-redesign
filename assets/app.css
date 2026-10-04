@@ -676,7 +676,21 @@ body.legend-hidden .legend-link { display: flex; }
   content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--size-header); pointer-events: none;
   background: var(--color-bg-subtle);
 }
-.doc-shell .about-rail { position: static; }
+/* the aside follows you down the document the same way: pinned under the header, moving with the contents rail
+   when the document bar drops in, its Crock band reaching up into the strip it clears. When it's taller than the
+   screen it scrolls inside itself, and a soft edge says there's more */
+.doc-shell .about-rail { transition: transform var(--motion-duration-slow) var(--motion-ease-standard) 90ms; }
+.doc-shell.has-bar .about-rail { transform: translateY(var(--size-header)); transition-delay: 0ms; }
+.doc-shell .about-rail::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--size-header); pointer-events: none;
+  background: var(--color-bg-subtle);
+}
+.doc-shell .about-rail > .about {
+  max-height: calc(100vh - var(--size-row)); overflow-y: auto; scrollbar-width: none;
+  transition: max-height var(--motion-duration-slow) var(--motion-ease-standard) 90ms;
+}
+.doc-shell .about-rail > .about::-webkit-scrollbar { display: none; }
+.doc-shell.has-bar .about-rail > .about { max-height: calc(100vh - var(--size-row) - var(--size-header)); transition-delay: 0ms; }
 .doc-main { padding: 24px 40px 56px; }
 .toc {
   max-height: calc(100vh - var(--size-row)); overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 0 0 24px;
@@ -895,6 +909,10 @@ a.lin-step:hover .lin-title { color: var(--color-text-primary); text-decoration-
 .to-top.is-on { opacity: 1; transform: none; visibility: visible; pointer-events: auto; }
 .to-top:hover { color: var(--color-text-primary); border-color: var(--color-border-strong); transition-duration: var(--motion-duration-fast); }
 .to-top .icon { width: 18px; height: 18px; color: currentColor; }
+/* beside the aside, it keeps to the document's own corner, so it never covers the aside's actions */
+@media (min-width: 1024px) {
+  .to-top { right: calc((100vw - min(100vw, var(--size-frame))) / 2 + var(--size-aside) + 24px); }
+}
 .to-top:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-bg-canvas), 0 0 0 4px var(--color-focus-ring); }
 .doc-title:focus { outline: none; }
 /* ≥1200 the contents rail is already on screen, so the bar carries no Contents menu */
@@ -1071,7 +1089,9 @@ html.is-locked { overflow: hidden; }
   .shell { grid-template-columns: minmax(0, 1fr) var(--size-map); }
   .doc-shell { grid-template-columns: minmax(0, 1fr); }
   .doc-shell .center { border-right: 0; }
-  .doc-shell .about-rail { border-top: 1px solid var(--color-border-default); }
+  .doc-shell .about-rail { position: static; transform: none; border-top: 1px solid var(--color-border-default); }
+  .doc-shell .about-rail::before { display: none; }
+  .doc-shell .about-rail > .about { max-height: none; overflow: visible; }
   .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .about .crock { grid-column: 1 / -1; }
   .about .about-block { border-right: 1px solid var(--color-border-default); }
