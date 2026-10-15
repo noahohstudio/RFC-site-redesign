@@ -559,7 +559,7 @@ button{font:inherit; color:inherit}
 <body>
 <header class="top" id="top">
   <div class="brand"><span class="dots6" aria-hidden="true"><i style="--c:var(--ochre)"></i><i style="--c:var(--clay)"></i><i style="--c:var(--rose)"></i><i style="--c:var(--violet)"></i><i style="--c:var(--blue)"></i><i style="--c:var(--teal)"></i></span>RFC Editor</div>
-  <a href="https://noahohstudio.github.io/RFC-site-redesign/">Enter the archive&nbsp;&nbsp;→</a>
+  <a href="https://noahohstudio.github.io/RFC-site-redesign/#/">Enter the archive&nbsp;&nbsp;→</a>
 </header>
 
 <main>
@@ -691,7 +691,7 @@ button{font:inherit; color:inherit}
 
       <!-- K10: into the archive (desktop for now): the archive's own organisms form one by one, then its first screen -->
       <div class="layer" id="k10">
-        <div class="k10-frame" id="k10f"><div class="k10-full" id="k10full"></div><a class="k10-link" id="k10link" href="https://noahohstudio.github.io/RFC-site-redesign/" aria-label="Enter the archive"></a></div>
+        <div class="k10-frame" id="k10f"><div class="k10-full" id="k10full"></div><a class="k10-link" id="k10link" href="https://noahohstudio.github.io/RFC-site-redesign/#/" aria-label="Enter the archive"></a></div>
         <p class="k10-cap" id="k10cap" aria-live="polite"></p>
       </div>
 
@@ -706,7 +706,7 @@ button{font:inherit; color:inherit}
   </div>
   <section class="after">
     <p class="q">Then</p>
-    <p>The scroll ends in the archive itself, once the library redesign shows what it looks like (your o-3 note). Until then: <a href="https://noahohstudio.github.io/RFC-site-redesign/">the live archive</a>.</p>
+    <p>The scroll ends in the archive itself, once the library redesign shows what it looks like (your o-3 note). Until then: <a href="https://noahohstudio.github.io/RFC-site-redesign/#/">the live archive</a>.</p>
   </section>
 </main>
 
@@ -722,11 +722,10 @@ button{font:inherit; color:inherit}
 <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
 <script>
 (function () {
-  // published beside the archive (landing/): seeing this page counts as the archive's first visit in this tab, so the
-  // archive won't send you back here, and its links into the archive stay on the same site (Noah, 15 Oct: it "opens
-  // everytime you open the app for the first time, but not on reloads")
-  try { sessionStorage.setItem('rfc-landed', '1'); } catch (e) {}
-  if (/\/landing\/(index\.html)?$/.test(location.pathname)) Array.prototype.forEach.call(document.querySelectorAll('a[href="https://noahohstudio.github.io/RFC-site-redesign/"]'), function (a) { a.setAttribute('href', '../'); });
+  // the website's own address opens this story every time (Noah, 15 Oct: "push so that it opens everytime you open the
+  // website - implement fully"); the archive itself lives at #/, so every link into it carries that. Published beside
+  // the archive (landing/), the links stay on the same site
+  if (/\/landing\/(index\.html)?$/.test(location.pathname)) Array.prototype.forEach.call(document.querySelectorAll('a[href="https://noahohstudio.github.io/RFC-site-redesign/#/"]'), function (a) { a.setAttribute('href', '../#/'); });
   'use strict';
   var RM = window.matchMedia('(prefers-reduced-motion: reduce)');
   var $ = function (s) { return document.querySelector(s); };
