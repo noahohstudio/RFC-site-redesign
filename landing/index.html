@@ -436,6 +436,9 @@ button{font:inherit; color:inherit}
    picture holds still and a caption fades in: a short fade, the same at any scroll speed */
 #k9{opacity:0; visibility:hidden}
 .k9-cv{position:absolute; inset:0; width:100%; height:100%; display:block}
+.pop9{width:auto; max-width:300px; padding:11px 14px 12px; transition:opacity .15s var(--ease-out)}
+.pop9 .p-label{font-size:15px}
+.pop9 .p-rfc{margin-top:4px}
 .k9-cap{position:absolute; left:7vw; top:72%; width:min(640px,80vw); margin:0; opacity:0; transform:translateY(6px); transition:opacity .32s var(--ease-out), transform .45s var(--ease-out)}
 .k9-cap.on{opacity:1; transform:none}
 .k9-cap b{display:block; max-width:30ch; font-size:clamp(20px,2vw,28px); line-height:1.25; font-weight:600; letter-spacing:-.006em; text-wrap:balance}
@@ -666,6 +669,7 @@ button{font:inherit; color:inherit}
       <!-- K9: replaced, constantly. Each replacement in the index is an arc from the RFC replaced to the one that
            replaced it. The captions are working drafts -->
       <div class="layer" id="k9">
+        <div class="pop pop9" id="pop9" aria-live="polite"></div>
         <canvas class="k9-cv" id="k9cv" role="img" aria-label="Every replacement in the RFC index as an arc over the years, 1969 to today, joining an RFC to the one that replaced it; then the arcs close into circles, leave the line and gather into families of RFCs joined by replacements"></canvas>
         <p class="k9-cap" id="k9c0"></p><p class="k9-cap" id="k9c1"></p><p class="k9-cap" id="k9c2"></p><p class="k9-cap" id="k9c3"></p><p class="k9-cap" id="k9c4"></p>
       </div>
@@ -718,6 +722,11 @@ button{font:inherit; color:inherit}
 <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
 <script>
 (function () {
+  // published beside the archive (landing/): seeing this page counts as the archive's first visit in this tab, so the
+  // archive won't send you back here, and its links into the archive stay on the same site (Noah, 15 Oct: it "opens
+  // everytime you open the app for the first time, but not on reloads")
+  try { sessionStorage.setItem('rfc-landed', '1'); } catch (e) {}
+  if (/\/landing\/(index\.html)?$/.test(location.pathname)) Array.prototype.forEach.call(document.querySelectorAll('a[href="https://noahohstudio.github.io/RFC-site-redesign/"]'), function (a) { a.setAttribute('href', '../'); });
   'use strict';
   var RM = window.matchMedia('(prefers-reduced-motion: reduce)');
   var $ = function (s) { return document.querySelector(s); };
@@ -791,6 +800,9 @@ button{font:inherit; color:inherit}
   var FALL = .4;                            // each card's journey
   var DONE = APP[1] + FALL;                 // every card is home
   var LAND = S.t1.a + .6;                   // RFC 1's page becomes its card
+  // once home, each card turns to face you, flat, and stays so as the globe turns (Noah, 15 Oct: "have the cards face
+  // us always, in a 2d way - may look cleaner"; "don't change the intro for the globe"): the arrival is as it was
+  var TURN = .14, FACED = DONE + TURN;
 
   // ── Scrolling: Lenis on the landing only, as agreed; native scroll if it didn't load or motion is reduced
   var lenis = null;
@@ -1387,6 +1399,9 @@ button{font:inherit; color:inherit}
   if (renderer) {
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     scene = new T.Scene(); camera = new T.PerspectiveCamera(FOV, 1, .1, 400); camera.position.set(0, 0, 66);
+    // the cards at the back fade toward the page (Noah, 15 Oct: "slightly more fade for the cards in the back of the
+    // globe"): a fog in the page's own colour, off until every card is home
+    scene.fog = new T.Fog(0xffffff, 1e4, 1e4 + 1);
     group = new T.Group(); scene.add(group);
     // a card: a small page with lines of type, as on the wow-moments board
     var c = document.createElement('canvas'); c.width = 96; c.height = 124;
@@ -1445,7 +1460,7 @@ button{font:inherit; color:inherit}
     paint9(); paint10(); dirty = true;
     if (!renderer) return;
     var paper = new T.Color('rgb(' + CSS['--surface'].join(',') + ')'), bgc = new T.Color('rgb(' + CSS['--paper'].join(',') + ')');
-    bg = { r: bgc.r, g: bgc.g, b: bgc.b };
+    bg = { r: bgc.r, g: bgc.g, b: bgc.b }; scene.fog.color.copy(bgc);
     var colors = ERA.map(function (v) { return new T.Color('rgb(' + CSS[v].join(',') + ')'); });
     var tints = colors.map(function (col) { return col.clone().lerp(paper, .58); });
     for (var i = 0; i < N; i++) {
@@ -1470,8 +1485,16 @@ button{font:inherit; color:inherit}
   }
   function placeCard(i, k) {
     var i3 = i * 3, i4 = i * 4, sc = G.s[i] * k;
-    dummy.position.set(G.p[i3], G.p[i3 + 1], G.p[i3 + 2]); dummy.quaternion.set(G.q[i4], G.q[i4 + 1], G.q[i4 + 2], G.q[i4 + 3]);
+    dummy.position.set(G.p[i3], G.p[i3 + 1], G.p[i3 + 2]); dummy.quaternion.copy(qInv);
     dummy.scale.set(sc, sc, sc); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+  }
+  // every card where it lives on the globe, facing you, flat: turned against the globe's own turn
+  function faceCards() {
+    for (var i = 0, i3 = 0; i < N; i++, i3 += 3) {
+      dummy.position.set(G.p[i3], G.p[i3 + 1], G.p[i3 + 2]); dummy.quaternion.copy(qInv);
+      dummy.scale.set(G.s[i], G.s[i], G.s[i]); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
   }
 
   // ── Layout on resize
@@ -1552,7 +1575,8 @@ button{font:inherit; color:inherit}
       var i3 = i * 3, i4 = i * 4, sc;
       if (i === 0) {
         sc = G.s[0] * (RM.matches ? (s >= LAND ? 1 : 0) : easeOut(span(s, LAND - .05, LAND)));
-        dummy.position.set(G.p[0], G.p[1], G.p[2]); dummy.quaternion.set(G.q[0], G.q[1], G.q[2], G.q[3]);
+        dummy.position.set(G.p[0], G.p[1], G.p[2]); qa.set(G.q[0], G.q[1], G.q[2], G.q[3]);
+        qa.slerp(qInv, RM.matches ? (s >= LAND ? 1 : 0) : ease(span(s, LAND, LAND + TURN))); dummy.quaternion.copy(qa);
         setCard(0, 0, 0);
       } else {
         var t = RM.matches ? (cut ? 1 : 0) : clamp((s - A.app[i]) / FALL), e = 1 - Math.pow(1 - t, 3);
@@ -1564,7 +1588,9 @@ button{font:inherit; color:inherit}
         vW.set(Math.cos(ph) * rad + (tx - Math.cos(ang) * rf) * e, Math.sin(ph) * rad + (ty - Math.sin(ang) * rf) * e, zz).applyQuaternion(qInv);
         dummy.position.copy(vW);
         qa.set(qStart[i4], qStart[i4 + 1], qStart[i4 + 2], qStart[i4 + 3]); qb.set(G.q[i4], G.q[i4 + 1], G.q[i4 + 2], G.q[i4 + 3]);
-        qa.slerp(qb, e); dummy.quaternion.copy(qa);
+        qa.slerp(qb, e);
+        if (t >= 1) qa.slerp(qInv, RM.matches ? 1 : ease(span(s, A.app[i] + FALL, A.app[i] + FALL + TURN)));   // home: it turns to face you
+        dummy.quaternion.copy(qa);
         sc = t <= 0 ? 0 : G.s[i] * (1 + .25 * (1 - e));
         setCard(i, 0, 1 - (RM.matches ? (cut ? 1 : 0) : span(t, 0, .16)));   // a few that start inside the screen fade in
       }
@@ -2351,39 +2377,8 @@ button{font:inherit; color:inherit}
     }
     // names: the largest families at the stop, and the one pointed at; kept inside the screen
     g9.font = '500 ' + (narrow ? 10.5 : 11.5) + 'px "IBM Plex Mono", ui-monospace, monospace'; g9.textBaseline = 'alphabetic';
-    // at the stop, each named family's name sits among its RFCs (TLS first, then the largest), moved down where it
-    // would cover another; on phones, only TLS's
-    if (hl > 0) {
-      var put = [];
-      Object.keys(WEB.names).map(Number).sort(function (a, b) { return (b === TLS9) - (a === TLS9) || WEB.fam[b][0] - WEB.fam[a][0]; }).forEach(function (q) {
-        if ((hv && q === hov9) || (narrow && q !== TLS9)) return;
-        var cx = 0, cy = 0, n = 0;
-        for (var j = 0; j < WN; j++) if (WEB.f[j] === q) { cx += NX[j]; cy += NY[j]; n++; }
-        var t = WEB.names[q] + ' · ' + WEB.fam[q][0], tw = g9.measureText(t).width, x = clamp(cx / n, tw / 2 + 10, W - tw / 2 - 30), y = cy / n;
-        for (var tries = 0; tries < 8 && put.some(function (p) { return Math.abs(p[0] - x) < (p[2] + tw) / 2 + 8 && Math.abs(p[1] - y) < 16; }); tries++) y += 17;
-        put.push([x, y, tw]);
-        label9(t, x, y, 'center', hl * (hv ? .5 : 1), q === TLS9 ? C9.rose : C9.ink2);
-      });
-    }
-    if (hv) {
-      var fm = WEB.fam[hov9], tp = top9of(hov9), top = tp[1];
-      var one = FAMI[hov9].length === 1 ? L9[FAMI[hov9][0]] : null;
-      var t = WEB.names[hov9] ? WEB.names[hov9] + ' · ' + fm[0] + ' RFCs, ' + fm[2] + '–' + fm[3]
-        : one ? 'RFC ' + one[2] + ' replaced RFC ' + one[0] + ' · ' + fm[3]
-        : 'RFC ' + fm[4] + '’s family · ' + fm[0] + ' RFCs, ' + fm[2] + '–' + fm[3];
-      g9.font = '500 12px "IBM Plex Mono", ui-monospace, monospace';
-      var tw = g9.measureText(t).width;
-      label9(t, clamp(tp[0], tw / 2 + 12, W - tw / 2 - 12), Math.max(top - 8, 84), 'center', 1, C9.ink);
-    }
-  }
-  // where a family's name goes: over the middle of its circles, above the highest of them
-  function top9of(F) {
-    var top = 1e9, lx = 0, n = 0;
-    FAMI[F].forEach(function (k) {
-      var a = LA[k], b = LB[k], cy = (NY[a] + NY[b]) / 2, r = Math.hypot(NX[b] - NX[a], NY[b] - NY[a]) / 2;
-      top = Math.min(top, cy - r); lx += (NX[a] + NX[b]) / 2; n++;
-    });
-    return [lx / n, top];
+    // (no names drawn on the web: pointing at a family opens its card, #pop9; Noah, 15 Oct: "The captions on K9 are
+    // ugly, and don't match our visual language. Create small overlays for the hover effect instead")
   }
   // pointing at the web: the nearest shared RFC, or else the smallest circle under the pointer, picks a family
   function pick9(e) {
@@ -2397,10 +2392,29 @@ button{font:inherit; color:inherit}
       }
     }
     if (best !== hov9) { hov9 = best; key9 = ''; k9Frame(s9); }
+    card9(e);
+  }
+  // the family pointed at, as a small card beside the pointer (the card K6's references and K7's people use), only
+  // while the web is on screen: its name, or what it is, then how many RFCs it ties and over which years
+  var pop9 = $('#pop9'), card9F = -1;
+  function card9(e) {
+    var on = hov9 >= 0 && s9 >= S.t9x.a + .55 && s9 < S.t10.a;
+    if (!on) { pop9.style.opacity = 0; card9F = -1; return; }
+    if (hov9 !== card9F) {
+      var fm = WEB.fam[hov9], one = FAMI[hov9].length === 1 ? L9[FAMI[hov9][0]] : null, nm = WEB.names[hov9];
+      pop9.innerHTML = '<p class="p-label"></p><p class="p-rfc num"></p>';
+      pop9.firstChild.textContent = nm ? nm : one ? 'RFC ' + one[2] + ' replaced RFC ' + one[0] : 'RFC ' + fm[4] + '’s family';
+      pop9.lastChild.textContent = one ? Math.floor(one[1]) + ' → ' + Math.floor(one[3]) : fm[0] + ' RFCs · ' + fm[1] + ' replacements · ' + fm[2] + '–' + fm[3];
+      card9F = hov9;
+    }
+    var r = k9.getBoundingClientRect(), pw = pop9.offsetWidth, ph = pop9.offsetHeight, x = e.clientX - r.left + 16, y = e.clientY - r.top + 18;
+    if (x + pw > W - 12) x = e.clientX - r.left - pw - 16;
+    if (y + ph > H - 12) y = e.clientY - r.top - ph - 18;
+    pop9.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)'; pop9.style.opacity = 1;
   }
   cv9.addEventListener('pointermove', pick9);
   cv9.addEventListener('pointerdown', pick9);
-  cv9.addEventListener('pointerleave', function () { if (hov9 >= 0) { hov9 = -1; key9 = ''; k9Frame(s9); } });
+  cv9.addEventListener('pointerleave', function () { pop9.style.opacity = 0; card9F = -1; if (hov9 >= 0) { hov9 = -1; key9 = ''; k9Frame(s9); } });
 
   // ── The globe, every frame: it turns slowly on its own and a touch faster while you scroll. Its part of the story
   // ends once RFC 2119 fills the screen.
@@ -2418,9 +2432,13 @@ button{font:inherit; color:inherit}
     group.position.set(gx0 * side, gy0 * side, 0);
     group.rotation.set(.12, rotY, 0); group.updateMatrixWorld();
 
-    var phase = s < APP[0] - .01 ? 0 : s > DONE + .01 ? 2 : 1;
-    if (phase === 1 || (moved && phase !== lastPhase)) writeCards(s);   // during the arrival the cards follow the turning globe
+    var phase = s < APP[0] - .01 ? 0 : s > FACED + .01 ? 2 : 1;
+    qInv.copy(group.quaternion).invert();
+    if (phase === 1 || (moved && phase === 0 && phase !== lastPhase)) writeCards(s);   // during the arrival the cards follow the turning globe
+    else if (phase === 2) faceCards();   // home: they face you as it turns
     lastPhase = phase;
+    var fg = RM.matches ? (s > DONE ? 1 : 0) : span(s, DONE, FACED + .1), cz = camera.position.z;
+    scene.fog.near = cz - 6; scene.fog.far = Math.exp(lerp(Math.log(1e4), Math.log(cz + 40), fg));
     // the crowd fades for K3; RFC 2119 stays lit and grows a little
     var d = span(s, S.t2.a, S.t2.b), key = String(Math.round(d * 400));
     if (key !== lastKey && s > DONE) { applyColors(d); lastKey = key; }

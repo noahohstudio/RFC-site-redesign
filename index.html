@@ -5,16 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>RFC Editor — redesign concept</title>
   <meta name="description" content="An unofficial redesign concept for the RFC Editor: all 9,842 RFCs, newest first, searchable from the official RFC index. Each RFC is shown exactly as published.">
-  <meta name="build" content="20261015-2156">
+  <meta name="build" content="20261015-2213">
   <meta name="theme-color" content="#fbf7f0">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-  <link rel="preload" href="data/rfc-index.json?v=20261015-2156" as="fetch" type="application/json" crossorigin>
-  <link rel="stylesheet" href="assets/tokens.css?v=20261015-2156">
-  <link rel="stylesheet" href="assets/glyphs.css?v=20261015-2156">
-  <link rel="stylesheet" href="assets/app.css?v=20261015-2156">
+  <link rel="preload" href="data/rfc-index.json?v=20261015-2213" as="fetch" type="application/json" crossorigin>
+  <link rel="stylesheet" href="assets/tokens.css?v=20261015-2213">
+  <link rel="stylesheet" href="assets/glyphs.css?v=20261015-2213">
+  <link rel="stylesheet" href="assets/app.css?v=20261015-2213">
+  <script>
+    // the front door (Noah, 15 Oct: "lets make it so that it opens everytime you open the app for the first time, but
+    // not on reloads"): a tab's first visit to the archive's home starts with the story at landing/, which marks the
+    // visit; reloads, links straight to a year, an era or an RFC, and the way back from the story open the archive
+    (function () {
+      try {
+        var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+        if (sessionStorage.getItem('rfc-landed') || (nav && nav.type === 'reload') || (location.hash && location.hash !== '#/')) return;
+        sessionStorage.setItem('rfc-landed', '1');
+        location.replace('landing/');
+      } catch (e) {}
+    })();
+  </script>
   <script>
     (function () {
       try {
@@ -24,8 +37,8 @@
       } catch (e) {}
     })();
   </script>
-  <script type="importmap">{"imports":{"./assets/app.js":"./assets/app.js?v=20261015-2156","./assets/crock.js":"./assets/crock.js?v=20261015-2156","./assets/data.js":"./assets/data.js?v=20261015-2156","./assets/docview.js":"./assets/docview.js?v=20261015-2156","./assets/indexview.js":"./assets/indexview.js?v=20261015-2156","./assets/menus.js":"./assets/menus.js?v=20261015-2156","./assets/perf.js":"./assets/perf.js?v=20261015-2156","./assets/search.js":"./assets/search.js?v=20261015-2156","./assets/searchui.js":"./assets/searchui.js?v=20261015-2156","./assets/timeline.js":"./assets/timeline.js?v=20261015-2156","./assets/ui.js":"./assets/ui.js?v=20261015-2156"}}</script>
-  <script type="module" src="assets/app.js?v=20261015-2156"></script>
+  <script type="importmap">{"imports":{"./assets/app.js":"./assets/app.js?v=20261015-2213","./assets/crock.js":"./assets/crock.js?v=20261015-2213","./assets/data.js":"./assets/data.js?v=20261015-2213","./assets/docview.js":"./assets/docview.js?v=20261015-2213","./assets/indexview.js":"./assets/indexview.js?v=20261015-2213","./assets/menus.js":"./assets/menus.js?v=20261015-2213","./assets/perf.js":"./assets/perf.js?v=20261015-2213","./assets/search.js":"./assets/search.js?v=20261015-2213","./assets/searchui.js":"./assets/searchui.js?v=20261015-2213","./assets/timeline.js":"./assets/timeline.js?v=20261015-2213","./assets/ui.js":"./assets/ui.js?v=20261015-2213"}}</script>
+  <script type="module" src="assets/app.js?v=20261015-2213"></script>
 </head>
 <body>
 <!-- sprite:start -->
