@@ -478,6 +478,9 @@ button{font:inherit; color:inherit}
 .after p{max-width:60ch}
 
 /* the timeline: a working tool for us, not part of the design */
+/* the timeline of the scroll, a working tool: off unless the address asks for it (?timeline; Noah, 15 Oct: "remove
+   the timeline from the bottom", "the admin timeline") */
+.hud:not(.on){display:none}
 .hud{position:fixed; left:16px; bottom:16px; width:min(440px,calc(100vw - 32px)); z-index:7; background:var(--surface); border:1px solid var(--line-soft); border-radius:8px; box-shadow:var(--lift); padding:10px 12px 11px; font-size:12px; color:var(--ink-2)}
 .hud-head{display:flex; align-items:baseline; gap:10px}
 .hud-head b{font-weight:600; color:var(--ink)}
@@ -839,10 +842,12 @@ button{font:inherit; color:inherit}
     el.addEventListener('click', function () { scrollToScreens(s.a + .02); });
     bar.insertBefore(el, playhead);
   });
-  var hud = $('#hud');
+  // the timeline is for working on the scroll only: shown when the address has ?timeline, and then T hides and shows it
+  var hud = $('#hud'), HUD_ON = /[?&]timeline\b/.test(location.search);
+  hud.classList.toggle('on', HUD_ON); if (!HUD_ON) hud.setAttribute('aria-hidden', 'true');
   function toggleHud() { hud.classList.toggle('min'); $('#hud-hide').textContent = hud.classList.contains('min') ? 'Show' : 'Hide'; }
   $('#hud-hide').addEventListener('click', toggleHud);
-  document.addEventListener('keydown', function (e) { if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !e.altKey && !/input|textarea/i.test(e.target.tagName)) toggleHud(); });
+  document.addEventListener('keydown', function (e) { if (HUD_ON && (e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !e.altKey && !/input|textarea/i.test(e.target.tagName)) toggleHud(); });
 
   // ── RFC 1, as published, and where it lives online
   $('#doc1').textContent = 'Network Working Group                                   Steve Crocker\nRequest for Comments: 1                                          UCLA\n                                                         7 April 1969\n\n\n                         Title:   Host Software\n                        Author:   Steve Crocker\n                          Installation:   UCLA\n                          Date:   7 April 1969\n             Network Working Group Request for Comment:   1\n\n\nCONTENTS\n\nINTRODUCTION\n\n  I. A Summary of the IMP Software\n\n     Messages\n\n     Links\n\n     IMP Transmission and Error Checking';
